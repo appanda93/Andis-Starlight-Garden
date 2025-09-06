@@ -1,4 +1,4 @@
-const CACHE = "starlight-v1";
+const CACHE = "starlight-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -30,3 +30,4 @@ self.addEventListener("fetch", (e) => {
     caches.match(e.request).then(hit => hit || fetch(e.request))
   );
 });
+
