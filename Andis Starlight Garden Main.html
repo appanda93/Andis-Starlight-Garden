@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Andi's Starlight Garden 🌟</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Sacramento&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#5b2b86;
+    --panel:#fff7fb;
+    --accent:#d8b4f8;
+    --btn:#f7d9f0;
+    --btn2:#e6c7ff;
+    --shadow:rgba(200,150,255,.4);
+  }
+  html,body{height:100%}
+
+  /* Scrollable page so the shop isn't clipped */
+  body{
+    margin:0;
+    display:grid;
+    justify-items:center;
+    align-items:start;
+    min-height:100vh;
+    background:linear-gradient(135deg,#ffe6f0,#e6f7ff);
+    color:var(--ink); font-family:'Poppins',sans-serif;
+    position:relative;
+    overflow-x:hidden;
+    overflow-y:auto;
+  }
+
+  h1,h2,#scoreTop{font-family:'Sacramento',cursive}
+
+  /* Fireflies floating across the whole page */
+  .firefly{
+    position:absolute; width:6px;height:6px;border-radius:50%;
+    background:#ffff99; box-shadow:0 0 8px 4px rgba(255,255,150,.6);
+    animation:float 10s linear infinite; pointer-events:none; z-index:0;
+  }
+  @keyframes float{from{transform:translateY(100vh);opacity:0}50%{opacity:1}to{transform:translateY(-10vh);opacity:0}}
+
+  .wrap{position:relative; z-index:2; width:min(960px,96vw); padding-bottom:24px}
+  #topBar{display:flex; align-items:center; justify-content:space-between; gap:8px; padding-top:8px}
+  #scoreTop{font-size:32px; text-shadow:0 0 8px #ff99cc,0 0 12px #cc99ff,0 0 18px #ffe6ff}
+  #musicBtn,#resetBtn,#howtoBtn{
+    padding:8px 12px; border:none; border-radius:10px; background:var(--btn);
+    box-shadow:0 4px 8px rgba(0,0,0,.15); cursor:pointer; transition:.15s; font-weight:600;
+  }
+  #musicBtn:hover,#resetBtn:hover,#howtoBtn:hover{transform:scale(1.05); background:var(--btn2)}
+  #bestBadge{font-size:14px; opacity:.85}
+
+  /* ===== Mythical Forest Board ===== */
+  #garden{
+    margin:12px 0 0; position:relative;
+    border:4px solid var(--accent); border-radius:18px;
+    box-shadow:0 10px 30px var(--shadow);
+    min-height:340px; overflow:hidden;
+    /* Layered background: sky → hills → subtle stars */
+    background:
+      /* sky gradient */
+      linear-gradient(180deg, #f6ecff 0%, #eaf7ff 40%, #eaf9f0 100%),
+      /* soft star overlay (optional) */
+      url("icons8-star-64.png") repeat;
+    background-size: auto, 64px 64px;
+  }
+  /* Hills + trees as decorative layers */
+  #garden::before, #garden::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+  }
+  /* Rolling pastel hills */
+  #garden::before{
+    background:
+      radial-gradient(120% 70% at 20% 110%, #d7f6da 0 55%, transparent 56%),
+      radial-gradient(120% 70% at 80% 115%, #d1f0ff 0 55%, transparent 56%),
+      radial-gradient(140% 90% at 50% 120%, #e6dbff 0 55%, transparent 56%);
+    opacity:.8;
+  }
+  /* Tree silhouettes (gentle) */
+  #garden::after{
+    background:
+      /* trunks */
+      repeating-linear-gradient(90deg,
+        rgba(150,120,200,.10) 0 6px, transparent 6px 46px),
+      /* canopy blobs */
+      radial-gradient(60px 40px at 10% 20%, rgba(160,220,180,.18) 0 55%, transparent 56%),
+      radial-gradient(70px 48px at 30% 28%, rgba(150,200,210,.18) 0 55%, transparent 56%),
+      radial-gradient(65px 45px at 55% 18%, rgba(180,160,220,.18) 0 55%, transparent 56%),
+      radial-gradient(70px 50px at 80% 30%, rgba(160,220,190,.18) 0 55%, transparent 56%);
+    mix-blend-mode:multiply;
+  }
+
+  /* Grid of forest plots */
+  .plots{
+    position:relative;
+    display:grid; grid-template-columns:repeat(5,1fr); gap:10px;
+    padding:14px;
+    z-index:1;
+  }
+
+  /* Base plot style (soft card) */
+  .plot{
+    aspect-ratio:1/1; border-radius:16px;
+    background:rgba(255,255,255,.75);
+    border:2px solid rgba(216,180,248,.55);
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.5), 0 6px 12px rgba(0,0,0,.08);
+    position:relative; overflow:hidden;
+  }
+  .spr{ position:absolute; font-size:28px; filter:drop-shadow(0 2px 3px rgba(0,0,0,.15)) }
+  .float { animation:bob 3.2s ease-in-out infinite }
+  @keyframes bob{0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)}}
+
+  /* ===== Biome themes ===== */
+  .plot.glade{
+    background:
+      radial-gradient(140% 100% at 50% 120%, rgba(180,255,210,.45) 0 55%, rgba(180,255,210,0) 56%),
+      radial-gradient(circle at 70% 20%, rgba(255,255,255,.6) 0 8%, transparent 9%),
+      radial-gradient(circle at 30% 30%, rgba(255,255,255,.5) 0 6%, transparent 7%),
+      linear-gradient(180deg,#efffed,#e9fff5);
+    border-color:#c5f2d6;
+  }
+  .plot.pond{
+    background:
+      radial-gradient(60% 60% at 50% 55%, rgba(255,255,255,.8) 0 8%, transparent 9%),
+      radial-gradient(60% 60% at 30% 40%, rgba(255,255,255,.6) 0 6%, transparent 7%),
+      radial-gradient(120% 120% at 50% 60%, #bfefff 0 52%, #a6e2ff 53% 60%, #b0f1ff 61% 100%);
+    border-color:#a6def7;
+    box-shadow:inset 0 0 0 3px rgba(255,255,255,.55), 0 6px 12px rgba(0,0,0,.06);
+  }
+  .plot.ring{
+    background:linear-gradient(180deg,#f3fff0,#eafff5);
+    border-color:#d1f7de;
+  }
+  .plot.ring::after{
+    content:""; position:absolute; inset:14%; border-radius:50%;
+    border:4px dotted #f0b7ff88;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.6);
+  }
+  .plot.grove{
+    background:
+      radial-gradient(120% 100% at 40% 110%, #e4ffea 0 55%, transparent 56%),
+      linear-gradient(135deg, rgba(170,210,180,.25), rgba(160,200,220,.25)),
+      linear-gradient(180deg,#f1fff4,#e9fff8);
+    border-color:#c9eccf;
+  }
+  .plot.grove::before{
+    content:""; position:absolute; inset:-10% -10% 40% -10%;
+    background:repeating-linear-gradient(90deg, rgba(120,150,120,.12) 0 6px, rgba(0,0,0,0) 6px 42px);
+    mix-blend-mode:multiply; opacity:.6;
+  }
+  .plot.crystal{
+    background:
+      linear-gradient(135deg, #eef2ff, #f6edff),
+      conic-gradient(from 45deg at 30% 30%, rgba(180,160,255,.20), transparent 25%, rgba(200,180,255,.15) 0 50%, transparent 0 75%, rgba(220,200,255,.18) 0);
+    border-color:#cfc2ff;
+    box-shadow: inset 0 0 18px rgba(190,160,255,.25), 0 6px 12px rgba(0,0,0,.08);
+  }
+
+  /* Collect + shop */
+  #collectBtn{
+    width:100%; margin-top:10px; padding:16px 18px; border:none; border-radius:14px;
+    background:linear-gradient(135deg,#f7d9f0,#e6c7ff); color:var(--ink);
+    font-weight:700; font-size:18px; box-shadow:0 6px 14px rgba(0,0,0,.15); cursor:pointer; transition:.15s;
+  }
+  #collectBtn:active{transform:scale(.98)}
+  @media (max-width: 600px){ #collectBtn{ position:sticky; bottom:8px; z-index:5 } }
+
+  .shop{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px}
+  .card{
+    background:var(--panel); border:3px solid var(--accent); border-radius:14px; padding:10px;
+    box-shadow:0 6px 14px rgba(0,0,0,.12); text-align:center;
+  }
+  .card h3{margin:6px 0 4px; font-size:20px}
+  .card p{margin:0; font-size:14px}
+  .buyBtn{
+    width:100%; margin-top:8px; padding:10px; border:none; border-radius:10px;
+    background:var(--btn); cursor:pointer; transition:.15s; font-weight:600;
+  }
+  .buyBtn:hover{transform:scale(1.04); background:var(--btn2)}
+
+  /* Start screen */
+  #start{position:fixed; inset:0; display:grid; place-items:center;
+    background:linear-gradient(135deg,#ffe6f0cc,#e6f7ffcc); z-index:15;}
+  #start .panel{
+    text-align:center; background:#fffafa; border:4px solid var(--accent); border-radius:16px;
+    padding:18px 24px; box-shadow:0 10px 30px var(--shadow);
+  }
+  #start h1{font-size:56px; margin:0 0 6px; text-shadow:0 0 8px #ff99cc,0 0 12px #cc99ff}
+  #start .best{margin:6px 0 12px; opacity:.85}
+  #start button{font-weight:700; padding:10px 16px; border:none; border-radius:10px; background:var(--btn); cursor:pointer}
+  #start button:hover{transform:scale(1.05); background:var(--btn2)}
+
+  /* Confetti */
+  #fxCanvas{position:fixed; inset:0; pointer-events:none; z-index:20;}
+
+  /* Modal */
+  .backdrop{position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; padding:20px; z-index:100;}
+  .modal{
+    max-width:560px;width:100%; background:#fffafa; border:4px solid var(--accent);
+    border-radius:16px; box-shadow:0 10px 30px rgba(200,150,255,.5); padding:20px;
+  }
+  .modal h2{margin:0 0 8px; font-size:36px; text-align:center; text-shadow:0 0 8px #ff99cc,0 0 12px #cc99ff}
+  .modal ul{margin:8px 0 0 20px; padding:0; line-height:1.5; font-size:16px}
+  .modal .actions{display:flex; justify-content:center; margin-top:12px}
+  .modal button{padding:8px 12px; border:none; border-radius:10px; background:var(--btn); cursor:pointer}
+
+  /* Tap sparkles */
+  .spark{
+    position:absolute; pointer-events:none; font-size:18px; animation:spark 800ms ease forwards;
+    filter:drop-shadow(0 0 6px rgba(255,255,255,.9));
+  }
+  @keyframes spark{from{opacity:1; transform:translate(-50%,-50%) scale(1)} to{opacity:0; transform:translate(-50%,-140%) scale(.8)}}
+
+  /* Responsive grid count */
+  @media(max-width:560px){
+    .shop{grid-template-columns:1fr}
+    .plots{grid-template-columns:repeat(4,1fr)}
+  }
+</style>
+</head>
+<body>
+  <!-- Fireflies -->
+  <script>
+    for(let i=0;i<16;i++){
+      const f=document.createElement('div'); f.className='firefly';
+      f.style.left=Math.random()*100+'vw'; f.style.animationDuration=(8+Math.random()*5)+'s';
+      document.body.appendChild(f);
+    }
+  </script>
+
+  <!-- Start Screen -->
+  <div id="start">
+    <div class="panel">
+      <h1>Andi's Starlight Garden 🧚‍♀️</h1>
+      <div class="best" id="bestOnStart">Best: 0</div>
+      <p>Grow mushrooms, invite fairies, befriend frogs — and bask in the glow ✨</p>
+      <div style="margin-top:10px">
+        <button id="btnStart">Start Garden</button>
+        <button id="btnHowtoStart">How to Play</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confetti -->
+  <canvas id="fxCanvas"></canvas>
+
+  <div class="wrap" id="app" style="display:none">
+    <div id="topBar">
+      <div>
+        <div id="scoreTop">Starlight: <span id="starlight">0</span></div>
+        <div id="bestBadge">👑 Best: <span id="best">0</span> · +<span id="rate">0</span>/s · +<span id="tap">0</span>/tap</div>
+      </div>
+      <div>
+        <button id="howtoBtn">How to Play</button>
+        <button id="musicBtn">🔊 Music On</button>
+        <button id="resetBtn" title="Reset progress">Reset</button>
+      </div>
+    </div>
+
+    <div id="garden">
+      <div class="plots" id="plots"></div>
+    </div>
+
+    <button id="collectBtn">Collect Starlight ✨</button>
+
+    <div class="shop">
+      <div class="card">
+        <h3>🍄 Mushrooms</h3>
+        <p>+1 starlight / sec</p>
+        <p>Owned: <span id="mushCnt">0</span> · Cost: <span id="mushCost">10</span></p>
+        <button class="buyBtn" id="buyMush">Plant Mushroom</button>
+      </div>
+      <div class="card">
+        <h3>🧚 Fairies</h3>
+        <p>+3 starlight / sec</p>
+        <p>Invited: <span id="fairyCnt">0</span> · Cost: <span id="fairyCost">50</span></p>
+        <button class="buyBtn" id="buyFairy">Invite Fairy</button>
+      </div>
+      <div class="card">
+        <h3>🐸 Frogs</h3>
+        <p>+1 starlight / tap</p>
+        <p>Friends: <span id="frogCnt">0</span> · Cost: <span id="frogCost">30</span></p>
+        <button class="buyBtn" id="buyFrog">Befriend Frog</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- How To Modal -->
+  <div class="backdrop" id="howto">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
+      <h2 id="howtoTitle">How to Play 🌟</h2>
+      <ul>
+        <li><b>Goal:</b> Use Starlight to grow your garden. Plant mushrooms, invite fairies, and befriend frogs.</li>
+        <li><b>Collect:</b> Tap the big button to gather Starlight. Time will also accrue Starlight in your pocket.</li>
+        <li><b>Grow:</b> Buy 🍄 Mushrooms (+1/s), invite 🧚 Fairies (+3/s), and befriend 🐸 Frogs (+1/tap).</li>
+        <li><b>Idle:</b> The garden keeps growing when closed — you’ll get offline earnings next time.</li>
+        <li><b>Zen:</b> Growing a Starlight Garden brings you joy and the tranquility you seek.</li>
+      </ul>
+      <div class="actions"><button id="closeHowto">Got it ✨</button></div>
+    </div>
+  </div>
+
+<script>
+  // ====== State & Utilities ======
+  const KEY = 'starlight_garden_state_v1';
+  const FX = document.getElementById('fxCanvas');
+  const FXX = FX.getContext('2d');
+
+  const els = {
+    app: document.getElementById('app'),
+    plots: document.getElementById('plots'),
+    starlight: document.getElementById('starlight'),
+    best: document.getElementById('best'),
+    rate: document.getElementById('rate'),
+    tap: document.getElementById('tap'),
+    bestOnStart: document.getElementById('bestOnStart'),
+    mushCnt: document.getElementById('mushCnt'),
+    mushCost: document.getElementById('mushCost'),
+    fairyCnt: document.getElementById('fairyCnt'),
+    fairyCost: document.getElementById('fairyCost'),
+    frogCnt: document.getElementById('frogCnt'),
+    frogCost: document.getElementById('frogCost'),
+    howto: document.getElementById('howto'),
+  };
+
+  let S = loadState();
+  let lastTick = performance.now();
+  let loopId = null;
+  let celebratedThisSession = false;
+
+  // Music
+  let music = null, musicOn = false;
+
+  // ====== NEW: Pop SFX (Web Audio) ======
+  let audioCtx = null;
+  function playPop(pitch = 520){
+    try{
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      const base = pitch * (0.9 + Math.random()*0.2); // slight variation
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(base, t);
+      osc.frequency.exponentialRampToValueAtTime(base / 2, t + 0.08);
+
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.18, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.18);
+    } catch(e) { /* ignore audio errors */ }
+  }
+  // ===============================
+
+  // Weighted biome choice
+  function chooseBiome(){
+    const r = Math.random();
+    if (r < 0.50) return 'glade';     // common
+    if (r < 0.68) return 'grove';     // some trees
+    if (r < 0.83) return 'ring';      // fairy rings
+    if (r < 0.93) return 'pond';      // rarer
+    return 'crystal';                 // rare
+  }
+
+  // Build plots and assign biomes
+  function buildPlots(){
+    els.plots.innerHTML = '';
+    const cols = window.innerWidth < 560 ? 4 : 5;
+    const total = cols * (cols === 4 ? 4 : 5);
+    els.plots.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+    for(let i=0;i<total;i++){
+      const d=document.createElement('div');
+      d.className='plot ' + chooseBiome();
+      d.dataset.idx=i;
+      els.plots.appendChild(d);
+    }
+    refreshSprites();
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(raw){
+        const obj = JSON.parse(raw);
+        const now = Date.now();
+        const elapsed = Math.max(0, Math.floor((now - (obj.last||now))/1000));
+        obj.amount += obj.perSec * elapsed; // offline earnings
+        obj.last = now;
+        localStorage.setItem(KEY, JSON.stringify(obj));
+        return obj;
+      }
+    }catch(e){}
+    return { amount:0, best:0, perSec:0, perTap:1, mush:0, fairy:0, frog:0, last:Date.now() };
+  }
+  function saveState(){ S.last = Date.now(); localStorage.setItem(KEY, JSON.stringify(S)); }
+  function resetState(){
+    if(confirm('Reset your Starlight Garden progress?')){
+      localStorage.removeItem(KEY);
+      S = {amount:0,best:0,perSec:0,perTap:1,mush:0,fairy:0,frog:0,last:Date.now()};
+      celebratedThisSession = false;
+      updateUI(); refreshSprites();
+    }
+  }
+
+  // Costs
+  const base = { mush:10, fairy:50, frog:30 };
+  function costOf(type,count){
+    const f = {mush:1.15, fairy:1.18, frog:1.16}[type];
+    return Math.floor(base[type] * Math.pow(f, count));
+  }
+
+  function n(x){ return Math.floor(x).toLocaleString(); }
+
+  function updateUI(){
+    document.getElementById('starlight').textContent = n(S.amount);
+    document.getElementById('best').textContent = n(S.best);
+    document.getElementById('rate').textContent = n(S.perSec);
+    document.getElementById('tap').textContent = n(S.perTap);
+    document.getElementById('bestOnStart').textContent = 'Best: ' + n(S.best);
+    document.getElementById('mushCnt').textContent = S.mush;
+    document.getElementById('fairyCnt').textContent = S.fairy;
+    document.getElementById('frogCnt').textContent = S.frog;
+    document.getElementById('mushCost').textContent = n(costOf('mush',S.mush));
+    document.getElementById('fairyCost').textContent = n(costOf('fairy',S.fairy));
+    document.getElementById('frogCost').textContent = n(costOf('frog',S.frog));
+  }
+
+  function maybeBest(){
+    if (S.amount > S.best) {
+      S.best = S.amount;
+      if (!celebratedThisSession) { confetti(); celebratedThisSession = true; }
+    }
+  }
+
+  // Sprites (visual feedback for purchases)
+  function refreshSprites(){
+    document.querySelectorAll('.spr').forEach(x=>x.remove());
+    for(let i=0;i<S.mush;i++) placeSprite('🍄');
+    for(let i=0;i<S.fairy;i++) placeSprite('🧚‍♀️', true);
+    for(let i=0;i<S.frog;i++) placeSprite('🐸');
+  }
+  function placeSprite(emoji, floating=false){
+    const plots = document.querySelectorAll('.plot');
+    if(!plots.length) return;
+    const p = plots[Math.floor(Math.random()*plots.length)];
+    const span = document.createElement('span');
+    span.className = 'spr' + (floating ? ' float' : '');
+    span.textContent = emoji;
+    span.style.left = (10 + Math.random()*70) + '%';
+    span.style.top  = (15 + Math.random()*60) + '%';
+    p.appendChild(span);
+  }
+
+  // Tap sparkles
+  function sparkleAt(x,y){
+    for(let i=0;i<6;i++){
+      const s = document.createElement('div');
+      s.className='spark';
+      s.textContent = ['✨','💫','⭐'][Math.floor(Math.random()*3)];
+      s.style.left = x + (Math.random()*24-12) + 'px';
+      s.style.top  = y + (Math.random()*10-5)  + 'px';
+      document.body.appendChild(s);
+      setTimeout(()=>s.remove(),800);
+    }
+  }
+
+  // Confetti
+  function confetti(){
+    const w = FX.width = window.innerWidth, h = window.innerHeight;
+    FX.height = h;
+    const parts = [];
+    const colors = ['#ff99cc','#c1f0f6','#f7d9f0','#d4f7d0','#fef3bd','#b39ddb'];
+    for(let i=0;i<140;i++){
+      const ang = Math.random()*Math.PI - Math.PI/2, sp = 6+Math.random()*6;
+      parts.push({x:w/2,y:h*0.25,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp-2,g:.25+Math.random()*.2,life:60+Math.random()*40,c:colors[Math.floor(Math.random()*colors.length)],s:4+Math.random()*4,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.3});
+    }
+    (function tick(){
+      FXX.clearRect(0,0,w,h);
+      parts.forEach(p=>{p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;p.life--;
+        FXX.save();FXX.translate(p.x,p.y);FXX.rotate(p.r);
+        FXX.fillStyle=p.c;FXX.fillRect(-p.s/2,-p.s/2,p.s,p.s*1.6);FXX.restore();
+      });
+      for(let i=parts.length-1;i>=0;i--) if(parts[i].life<=0||parts[i].y>h+40) parts.splice(i,1);
+      if(parts.length) requestAnimationFrame(tick); else FXX.clearRect(0,0,w,h);
+    })();
+  }
+
+  // Loop
+  function loop(ts){
+    const dt = Math.max(0,(ts - lastTick)/1000);
+    lastTick = ts;
+    S.amount += S.perSec * dt;
+    maybeBest(); updateUI();
+    loopId = requestAnimationFrame(loop);
+  }
+
+  // Actions
+  function collect(e){
+    S.amount += S.perTap;
+    playPop(540); // NEW: soft pop for Collect (distinct pitch)
+    maybeBest(); updateUI(); saveState();
+    if(e){ sparkleAt(e.clientX, e.clientY); }
+  }
+
+  function buy(type){
+    const cost = costOf(type, S[type]);
+    if(S.amount < cost) return;
+
+    S.amount -= cost;
+    S[type] += 1;
+
+    if(type==='mush') { S.perSec += 1; placeSprite('🍄'); playPop(420); }   // ✅ pop
+    if(type==='fairy'){ S.perSec += 3; placeSprite('🧚‍♀️', true); playPop(650); } // ✅ higher pitch
+    if(type==='frog') { S.perTap += 1; placeSprite('🐸'); playPop(320); }   // ✅ lower pitch
+
+    updateUI(); saveState();
+  }
+
+  // Music
+  function ensureMusic(){
+    if(!music){ music = new Audio('Tokyo.mp3'); music.loop = true; music.volume = .6; }
+    music.play().then(()=>{musicOn=true;document.getElementById('musicBtn').textContent='🔊 Music On'}).catch(()=>{});
+  }
+  function toggleMusic(){
+    if(!music) return;
+    if(musicOn){ music.pause(); musicOn=false; document.getElementById('musicBtn').textContent='🔇 Music Off'; }
+    else { music.play().catch(()=>{}); musicOn=true; document.getElementById('musicBtn').textContent='🔊 Music On'; }
+  }
+
+  // Modal + Start
+  function openHowto(){ els.howto.style.display='flex'; }
+  function closeHowto(){ els.howto.style.display='none'; }
+  function startGame(){
+    document.getElementById('start').style.display='none';
+    document.getElementById('app').style.display='block';
+    celebratedThisSession = false;
+    ensureMusic(); buildPlots(); updateUI();
+    cancelAnimationFrame(loopId); lastTick = performance.now();
+    loopId = requestAnimationFrame(loop);
+  }
+
+  // Resize → rebuild plots to keep it pretty
+  function onResize(){
+    FX.width = window.innerWidth; FX.height = window.innerHeight;
+    buildPlots();
+  }
+  window.addEventListener('resize', onResize);
+
+  // Wire UI
+  document.getElementById('btnStart').addEventListener('click', startGame);
+  document.getElementById('btnHowtoStart').addEventListener('click', openHowto);
+  document.getElementById('howtoBtn').addEventListener('click', openHowto);
+  document.getElementById('closeHowto').addEventListener('click', closeHowto);
+  document.getElementById('musicBtn').addEventListener('click', toggleMusic);
+  document.getElementById('resetBtn').addEventListener('click', resetState);
+  document.getElementById('collectBtn').addEventListener('click', collect);
+  document.getElementById('buyMush').addEventListener('click', ()=>buy('mush'));
+  document.getElementById('buyFairy').addEventListener('click', ()=>buy('fairy'));
+  document.getElementById('buyFrog').addEventListener('click', ()=>buy('frog'));
+  document.getElementById('garden').addEventListener('click', (e)=>collect(e));
+
+  // Init
+  updateUI(); onResize();
+</script>
+</body>
+</html>
