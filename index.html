@@ -4,9 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Andi's Starlight Garden 🌟</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Sacramento&display=swap" rel="stylesheet">
+
 <link rel="manifest" href="manifest.json">
 
 <!-- iOS home screen icons -->
@@ -20,14 +22,12 @@
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
 <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
-<link rel="manifest" href="/manifest.json">
 
 <meta name="theme-color" content="#e6c7ff">
 
 <!-- iOS add-to-home goodies -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="apple-touch-icon" href="icon-192.png">
 
 <style>
   :root{
@@ -40,7 +40,6 @@
   }
   html,body{height:100%}
 
-  /* Scrollable page so the shop isn't clipped */
   body{
     margin:0;
     display:grid;
@@ -56,7 +55,6 @@
 
   h1,h2,#scoreTop{font-family:'Sacramento',cursive}
 
-  /* Fireflies floating across the whole page */
   .firefly{
     position:absolute; width:6px;height:6px;border-radius:50%;
     background:#ffff99; box-shadow:0 0 8px 4px rgba(255,255,150,.6);
@@ -97,8 +95,7 @@
   }
   #garden::after{
     background:
-      repeating-linear-gradient(90deg,
-        rgba(150,120,200,.10) 0 6px, transparent 6px 46px),
+      repeating-linear-gradient(90deg, rgba(150,120,200,.10) 0 6px, transparent 6px 46px),
       radial-gradient(60px 40px at 10% 20%, rgba(160,220,180,.18) 0 55%, transparent 56%),
       radial-gradient(70px 48px at 30% 28%, rgba(150,200,210,.18) 0 55%, transparent 56%),
       radial-gradient(65px 45px at 55% 18%, rgba(180,160,220,.18) 0 55%, transparent 56%),
@@ -227,7 +224,7 @@
   }
   @keyframes spark{from{opacity:1; transform:translate(-50%,-50%) scale(1)} to{opacity:0; transform:translate(-50%,-140%) scale(.8)}}
 
-  /* Responsive grid count */
+  /* Responsive grid count (CSS-driven; JS now respects this) */
   @media(max-width:560px){
     .shop{grid-template-columns:1fr}
     .plots{grid-template-columns:repeat(4,1fr)}
@@ -347,7 +344,7 @@
   // Music
   let music = null, musicOn = false;
 
-  // ====== NEW: Pop SFX (Web Audio) ======
+  // ====== Pop SFX (Web Audio) ======
   let audioCtx = null;
   function playPop(pitch = 520){
     try{
@@ -371,11 +368,23 @@
     } catch(e) { /* ignore */ }
   }
 
-  // Helpers
+  // ====== Helpers & Layout Guards ======
   function rand(min, max){ return Math.random() * (max - min) + min; }
   function clamp(v, min, max){ return Math.min(Math.max(v, min), max); }
 
-  // Weighted biome choice
+  // Track current column layout so we only rebuild on actual breakpoint changes
+  let COLS = null;
+  function computeCols(){
+    return window.matchMedia('(max-width: 560px)').matches ? 4 : 5;
+  }
+
+  function debounce(fn, ms=120){
+    let t; return (...args) => { clearTimeout(t); t = setTimeout(()=>fn(...args), ms); };
+  }
+
+  let _lastVw = window.innerWidth;
+
+  // ====== Biomes ======
   function chooseBiome(){
     const r = Math.random();
     if (r < 0.50) return 'glade';
@@ -385,22 +394,33 @@
     return 'crystal';
   }
 
-  // Build plots and assign biomes
-  function buildPlots(){
+  // ====== Build plots (CSS controls columns; JS respects breakpoint) ======
+  function buildPlots(force=false){
+    const cols = computeCols();
+
+    // Only rebuild if breakpoint changed or forced
+    if (!force && COLS === cols) {
+      refreshSprites();
+      recenterSprites();
+      return;
+    }
+    COLS = cols;
+
     els.plots.innerHTML = '';
-    const cols = window.innerWidth < 560 ? 4 : 5;
     const total = cols * (cols === 4 ? 4 : 5);
-    els.plots.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+
     for(let i=0;i<total;i++){
       const d=document.createElement('div');
       d.className='plot ' + chooseBiome();
       d.dataset.idx=i;
       els.plots.appendChild(d);
     }
+
     refreshSprites();
-    recenterSprites(); // ensure everything fits after rebuild
+    recenterSprites();
   }
 
+  // ====== State load/save ======
   function loadState(){
     try{
       const raw = localStorage.getItem(KEY);
@@ -408,7 +428,7 @@
         const obj = JSON.parse(raw);
         const now = Date.now();
         const elapsed = Math.max(0, Math.floor((now - (obj.last||now))/1000));
-        obj.amount += obj.perSec * elapsed;
+        obj.amount += obj.perSec * elapsed; // offline
         obj.last = now;
         localStorage.setItem(KEY, JSON.stringify(obj));
         return obj;
@@ -426,7 +446,7 @@
     }
   }
 
-  // Costs
+  // ====== Costs/UI ======
   const base = { mush:10, fairy:50, frog:30 };
   function costOf(type,count){
     const f = {mush:1.15, fairy:1.18, frog:1.16}[type];
@@ -456,7 +476,7 @@
     }
   }
 
-  // === Sprite logic: no edges, no overlaps ===
+  // ====== Sprite logic: no edges, no overlaps ======
   function overlaps(a, b, margin = 2){
     const ax = a.left,  ay = a.top,  aw = a.width,  ah = a.height;
     const bx = b.left,  by = b.top,  bw = b.width, bh = b.height;
@@ -523,7 +543,6 @@
     span.style.visibility = 'visible';
   }
 
-  // Keep sprites inside plots and try to separate overlaps after layout shifts
   function recenterSprites(){
     const PAD = 8;
     document.querySelectorAll('.plot').forEach(p => {
@@ -545,7 +564,7 @@
         span.style.top  = `${clamp(curTop,  PAD + bobRoom, maxY)}px`;
       });
 
-      // Light de-overlap pass: nudge colliding sprites apart a bit
+      // Light de-overlap pass
       const maxIters = 16;
       for (let iter=0; iter<maxIters; iter++){
         let anyMoved = false;
@@ -555,14 +574,12 @@
             const abox = getSpanBox(a);
             const bbox = getSpanBox(b);
             if (overlaps(abox, bbox, 2)){
-              // compute a small separation vector
               const dx = (abox.left + abox.width/2) - (bbox.left + bbox.width/2);
               const dy = (abox.top  + abox.height/2) - (bbox.top  + bbox.height/2);
               const len = Math.max(1, Math.hypot(dx,dy));
               const ux = dx / len, uy = dy / len;
-              const push = 4; // gentle nudge
+              const push = 4;
 
-              // nudge both in opposite directions
               let aX = parseFloat(a.style.left) || 0;
               let aY = parseFloat(a.style.top)  || 0;
               let bX = parseFloat(b.style.left) || 0;
@@ -590,33 +607,12 @@
             }
           }
         }
-        if (!anyMoved) break; // settled
+        if (!anyMoved) break;
       }
     });
   }
 
-  // Sprites (visual feedback for purchases)
-  function refreshSprites(){
-    document.querySelectorAll('.spr').forEach(x=>x.remove());
-    for(let i=0;i<S.mush;i++) placeSprite('🍄');
-    for(let i=0;i<S.fairy;i++) placeSprite('🧚‍♀️', true);
-    for(let i=0;i<S.frog;i++) placeSprite('🐸');
-  }
-
-  // Tap sparkles
-  function sparkleAt(x,y){
-    for(let i=0;i<6;i++){
-      const s = document.createElement('div');
-      s.className='spark';
-      s.textContent = ['✨','💫','⭐'][Math.floor(Math.random()*3)];
-      s.style.left = x + (Math.random()*24-12) + 'px';
-      s.style.top  = y + (Math.random()*10-5)  + 'px';
-      document.body.appendChild(s);
-      setTimeout(()=>s.remove(),800);
-    }
-  }
-
-  // Confetti
+  // ====== Confetti ======
   function confetti(){
     const w = FX.width = window.innerWidth, h = window.innerHeight;
     FX.height = h;
@@ -637,7 +633,7 @@
     })();
   }
 
-  // Loop
+  // ====== Loop ======
   function loop(ts){
     const dt = Math.max(0,(ts - lastTick)/1000);
     lastTick = ts;
@@ -646,7 +642,7 @@
     loopId = requestAnimationFrame(loop);
   }
 
-  // Actions
+  // ====== Actions ======
   function collect(e){
     S.amount += S.perTap;
     playPop(540);
@@ -665,9 +661,7 @@
     if(type==='fairy'){ S.perSec += 3; placeSprite('🧚‍♀️', true); playPop(650); }
     if(type==='frog') { S.perTap += 1; placeSprite('🐸'); playPop(320); }
 
-    // After adding, quick recenter to be safe
     recenterSprites();
-
     updateUI(); saveState();
   }
 
@@ -682,33 +676,56 @@
     else { music.play().catch(()=>{}); musicOn=true; document.getElementById('musicBtn').textContent='🔊 Music On'; }
   }
 
-  // Modal + Start
+  // Tap sparkles
+  function sparkleAt(x,y){
+    for(let i=0;i<6;i++){
+      const s = document.createElement('div');
+      s.className='spark';
+      s.textContent = ['✨','💫','⭐'][Math.floor(Math.random()*3)];
+      s.style.left = x + (Math.random()*24-12) + 'px';
+      s.style.top  = y + (Math.random()*10-5)  + 'px';
+      document.body.appendChild(s);
+      setTimeout(()=>s.remove(),800);
+    }
+  }
+
+  // ====== Start/Modal ======
   function openHowto(){ els.howto.style.display='flex'; }
   function closeHowto(){ els.howto.style.display='none'; }
   function startGame(){
     document.getElementById('start').style.display='none';
     document.getElementById('app').style.display='block';
     celebratedThisSession = false;
-    ensureMusic(); buildPlots(); updateUI();
+    ensureMusic(); buildPlots(true); updateUI();
     cancelAnimationFrame(loopId); lastTick = performance.now();
     loopId = requestAnimationFrame(loop);
   }
 
-  // Resize → rebuild plots to keep it pretty
-  function onResize(){
-    FX.width = window.innerWidth; FX.height = window.innerHeight;
-    buildPlots();
-  }
-  window.addEventListener('resize', onResize);
+  // ====== Smart resize handling (no flashing on mobile) ======
+  const handleResize = debounce(() => {
+    const vw = window.innerWidth;
+    const breakpointChanged = computeCols() !== COLS;
 
-  // Keep sprites sane when layout shifts
-  window.addEventListener('resize', recenterSprites);
-  window.addEventListener('orientationchange', recenterSprites);
+    // Keep canvas matched to viewport; harmless if called often
+    FX.width = window.innerWidth; 
+    FX.height = window.innerHeight;
+
+    if (breakpointChanged || Math.abs(vw - _lastVw) >= 1) {
+      buildPlots(true);           // rebuild only on genuine layout change
+    } else {
+      recenterSprites();          // height-only jiggle -> clamp sprites
+    }
+    _lastVw = vw;
+  }, 120);
+
+  window.addEventListener('resize', handleResize, { passive: true });
+  window.addEventListener('orientationchange', () => buildPlots(true), { passive: true });
+
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(recenterSprites);
   }
 
-  // Wire UI
+  // ====== Wire UI ======
   document.getElementById('btnStart').addEventListener('click', startGame);
   document.getElementById('btnHowtoStart').addEventListener('click', openHowto);
   document.getElementById('howtoBtn').addEventListener('click', openHowto);
@@ -721,9 +738,11 @@
   document.getElementById('buyFrog').addEventListener('click', ()=>buy('frog'));
   document.getElementById('garden').addEventListener('click', (e)=>collect(e));
 
-  // Init
-  updateUI(); onResize();
+  // ====== Init ======
+  updateUI();
+  buildPlots(true);
 </script>
+
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
