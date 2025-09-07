@@ -200,18 +200,30 @@
   }
 }
 
-  @media (max-width: 600px){
-    /* keep button anchored; avoid scroll jumps */
-    #collectBtn{
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: max(8px, env(safe-area-inset-bottom));
-      width: calc(100vw - 24px);
-      z-index: 5;
-    }
-    .bottom-spacer{ height: 72px; } /* space so content isn't covered */
-  }
+/* Button lives under the grid, in normal document flow */
+#collectBtn{
+  width: 100%;
+  margin: 12px 0 16px;
+  padding: 16px 18px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg,#f7d9f0,#e6c7ff);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 18px;
+  box-shadow: 0 6px 14px rgba(0,0,0,.15);
+  cursor: pointer;
+  transition: .15s;
+  touch-action: manipulation; 
+  -webkit-user-select: none; 
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* keep the nice press animation without affecting layout */
+#collectBtn:active{ transform: scale(.98); }
+
+/* no spacer needed anymore */
+.bottom-spacer{ display: none; }
 
   .shop{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px}
   .card{
@@ -916,6 +928,7 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+
 
 
 
