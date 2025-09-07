@@ -180,7 +180,26 @@
     font-weight:700; font-size:18px; box-shadow:0 6px 14px rgba(0,0,0,.15); cursor:pointer; transition:.15s;
     touch-action: manipulation; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
   }
-  #collectBtn:active{transform:scale(.98)}
+  #collectBtn:active{transform:scale(.98); }
+
+  /* Mobile: keep centered while pressing */
+@media (max-width: 600px){
+  #collectBtn{
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%); /* center */
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: calc(100vw - 24px);
+    z-index: 5;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    will-change: transform; /* smoother */
+  }
+  #collectBtn:active{
+    transform: translateX(-50%) scale(.98); /* <-- keep center + press */
+  }
+}
 
   @media (max-width: 600px){
     /* keep button anchored; avoid scroll jumps */
@@ -897,4 +916,5 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+
 
