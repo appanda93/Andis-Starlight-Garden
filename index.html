@@ -7,7 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Sacramento&display=swap" rel="stylesheet">
-  <link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json">
+
 <!-- iOS home screen icons -->
 <link rel="apple-touch-icon" sizes="180x180" href="https://appanda93.github.io/Andis-Starlight-Garden/apple-touch-icon-180x180.png">
 <link rel="apple-touch-icon" sizes="167x167" href="https://appanda93.github.io/Andis-Starlight-Garden/apple-touch-icon-167.png">
@@ -15,15 +16,11 @@
 <link rel="apple-touch-icon" sizes="120x120" href="https://appanda93.github.io/Andis-Starlight-Garden/apple-touch-icon-120.png">
 <link rel="apple-touch-icon" href="https://appanda93.github.io/Andis-Starlight-Garden/apple-touch-icon.png">
 
-
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
 <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
-
-<!-- Manifest (Android/desktop PWAs) -->
 <link rel="manifest" href="/manifest.json">
-
 
 <meta name="theme-color" content="#e6c7ff">
 
@@ -83,19 +80,14 @@
     border:4px solid var(--accent); border-radius:18px;
     box-shadow:0 10px 30px var(--shadow);
     min-height:340px; overflow:hidden;
-    /* Layered background: sky → hills → subtle stars */
     background:
-      /* sky gradient */
       linear-gradient(180deg, #f6ecff 0%, #eaf7ff 40%, #eaf9f0 100%),
-      /* soft star overlay (optional) */
       url("icons8-star-64.png") repeat;
     background-size: auto, 64px 64px;
   }
-  /* Hills + trees as decorative layers */
   #garden::before, #garden::after{
     content:""; position:absolute; inset:0; pointer-events:none;
   }
-  /* Rolling pastel hills */
   #garden::before{
     background:
       radial-gradient(120% 70% at 20% 110%, #d7f6da 0 55%, transparent 56%),
@@ -103,13 +95,10 @@
       radial-gradient(140% 90% at 50% 120%, #e6dbff 0 55%, transparent 56%);
     opacity:.8;
   }
-  /* Tree silhouettes (gentle) */
   #garden::after{
     background:
-      /* trunks */
       repeating-linear-gradient(90deg,
         rgba(150,120,200,.10) 0 6px, transparent 6px 46px),
-      /* canopy blobs */
       radial-gradient(60px 40px at 10% 20%, rgba(160,220,180,.18) 0 55%, transparent 56%),
       radial-gradient(70px 48px at 30% 28%, rgba(150,200,210,.18) 0 55%, transparent 56%),
       radial-gradient(65px 45px at 55% 18%, rgba(180,160,220,.18) 0 55%, transparent 56%),
@@ -367,7 +356,7 @@
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
 
-      const base = pitch * (0.9 + Math.random()*0.2); // slight variation
+      const base = pitch * (0.9 + Math.random()*0.2);
       osc.type = 'sine';
       osc.frequency.setValueAtTime(base, t);
       osc.frequency.exponentialRampToValueAtTime(base / 2, t + 0.08);
@@ -379,18 +368,21 @@
       osc.connect(gain).connect(audioCtx.destination);
       osc.start(t);
       osc.stop(t + 0.18);
-    } catch(e) { /* ignore audio errors */ }
+    } catch(e) { /* ignore */ }
   }
-  // ===============================
+
+  // Helpers
+  function rand(min, max){ return Math.random() * (max - min) + min; }
+  function clamp(v, min, max){ return Math.min(Math.max(v, min), max); }
 
   // Weighted biome choice
   function chooseBiome(){
     const r = Math.random();
-    if (r < 0.50) return 'glade';     // common
-    if (r < 0.68) return 'grove';     // some trees
-    if (r < 0.83) return 'ring';      // fairy rings
-    if (r < 0.93) return 'pond';      // rarer
-    return 'crystal';                 // rare
+    if (r < 0.50) return 'glade';
+    if (r < 0.68) return 'grove';
+    if (r < 0.83) return 'ring';
+    if (r < 0.93) return 'pond';
+    return 'crystal';
   }
 
   // Build plots and assign biomes
@@ -406,6 +398,7 @@
       els.plots.appendChild(d);
     }
     refreshSprites();
+    recenterSprites(); // ensure everything fits after rebuild
   }
 
   function loadState(){
@@ -415,7 +408,7 @@
         const obj = JSON.parse(raw);
         const now = Date.now();
         const elapsed = Math.max(0, Math.floor((now - (obj.last||now))/1000));
-        obj.amount += obj.perSec * elapsed; // offline earnings
+        obj.amount += obj.perSec * elapsed;
         obj.last = now;
         localStorage.setItem(KEY, JSON.stringify(obj));
         return obj;
@@ -429,7 +422,7 @@
       localStorage.removeItem(KEY);
       S = {amount:0,best:0,perSec:0,perTap:1,mush:0,fairy:0,frog:0,last:Date.now()};
       celebratedThisSession = false;
-      updateUI(); refreshSprites();
+      updateUI(); refreshSprites(); recenterSprites();
     }
   }
 
@@ -463,23 +456,151 @@
     }
   }
 
+  // === Sprite logic: no edges, no overlaps ===
+  function overlaps(a, b, margin = 2){
+    const ax = a.left,  ay = a.top,  aw = a.width,  ah = a.height;
+    const bx = b.left,  by = b.top,  bw = b.width, bh = b.height;
+    return !(ax + aw + margin <= bx ||
+             bx + bw + margin <= ax ||
+             ay + ah + margin <= by ||
+             by + bh + margin <= ay);
+  }
+
+  function getSpanBox(span){
+    return {
+      left: parseFloat(span.style.left) || 0,
+      top:  parseFloat(span.style.top)  || 0,
+      width: span.offsetWidth,
+      height: span.offsetHeight
+    };
+  }
+
+  function placeSprite(emoji, floating=false){
+    const plots = document.querySelectorAll('.plot');
+    if(!plots.length) return;
+
+    const p = plots[Math.floor(Math.random()*plots.length)];
+    const span = document.createElement('span');
+    span.className = 'spr' + (floating ? ' float' : '');
+    span.textContent = emoji;
+    span.style.visibility = 'hidden';
+    span.style.left = '0px';
+    span.style.top  = '0px';
+    p.appendChild(span);
+
+    // Measure plot + sprite
+    const rect = p.getBoundingClientRect();
+    const sprW = span.offsetWidth;
+    const sprH = span.offsetHeight;
+
+    const PAD = 8;
+    const bobRoom = floating ? 8 : 0;
+
+    const maxX = Math.max(PAD, rect.width  - sprW - PAD);
+    const maxY = Math.max(PAD, rect.height - sprH - PAD - bobRoom);
+
+    // Try several random positions that don't overlap existing .spr in this plot
+    const existing = Array.from(p.querySelectorAll('.spr')).filter(s => s !== span);
+    const attempts = 20;
+    let placed = false, x = PAD, y = PAD;
+
+    for(let i=0;i<attempts;i++){
+      x = rand(PAD, maxX);
+      y = rand(PAD + bobRoom, maxY);
+
+      const candidate = { left: x, top: y, width: sprW, height: sprH };
+      let hit = false;
+      for (const other of existing){
+        const obox = getSpanBox(other);
+        if (overlaps(candidate, obox, 3)){ hit = true; break; }
+      }
+      if (!hit){ placed = true; break; }
+    }
+
+    // If we failed to find a non-overlapping spot, just clamp to safe area
+    span.style.left = `${clamp(x, PAD, maxX)}px`;
+    span.style.top  = `${clamp(y, PAD + bobRoom, maxY)}px`;
+    span.style.visibility = 'visible';
+  }
+
+  // Keep sprites inside plots and try to separate overlaps after layout shifts
+  function recenterSprites(){
+    const PAD = 8;
+    document.querySelectorAll('.plot').forEach(p => {
+      const rect = p.getBoundingClientRect();
+      const sprites = Array.from(p.querySelectorAll('.spr'));
+
+      // Clamp inside bounds
+      sprites.forEach(span => {
+        const sprW = span.offsetWidth;
+        const sprH = span.offsetHeight;
+        const bobRoom = span.classList.contains('float') ? 8 : 0;
+        const maxX = Math.max(PAD, rect.width  - sprW - PAD);
+        const maxY = Math.max(PAD, rect.height - sprH - PAD - bobRoom);
+
+        const curLeft = parseFloat(span.style.left) || 0;
+        const curTop  = parseFloat(span.style.top)  || 0;
+
+        span.style.left = `${clamp(curLeft, PAD, maxX)}px`;
+        span.style.top  = `${clamp(curTop,  PAD + bobRoom, maxY)}px`;
+      });
+
+      // Light de-overlap pass: nudge colliding sprites apart a bit
+      const maxIters = 16;
+      for (let iter=0; iter<maxIters; iter++){
+        let anyMoved = false;
+        for (let i=0;i<sprites.length;i++){
+          for (let j=i+1;j<sprites.length;j++){
+            const a = sprites[i], b = sprites[j];
+            const abox = getSpanBox(a);
+            const bbox = getSpanBox(b);
+            if (overlaps(abox, bbox, 2)){
+              // compute a small separation vector
+              const dx = (abox.left + abox.width/2) - (bbox.left + bbox.width/2);
+              const dy = (abox.top  + abox.height/2) - (bbox.top  + bbox.height/2);
+              const len = Math.max(1, Math.hypot(dx,dy));
+              const ux = dx / len, uy = dy / len;
+              const push = 4; // gentle nudge
+
+              // nudge both in opposite directions
+              let aX = parseFloat(a.style.left) || 0;
+              let aY = parseFloat(a.style.top)  || 0;
+              let bX = parseFloat(b.style.left) || 0;
+              let bY = parseFloat(b.style.top)  || 0;
+
+              const aBob = a.classList.contains('float') ? 8 : 0;
+              const bBob = b.classList.contains('float') ? 8 : 0;
+
+              const aW = a.offsetWidth, aH = a.offsetHeight;
+              const bW = b.offsetWidth, bH = b.offsetHeight;
+
+              const aMaxX = Math.max(PAD, rect.width  - aW - PAD);
+              const aMaxY = Math.max(PAD, rect.height - aH - PAD - aBob);
+              const bMaxX = Math.max(PAD, rect.width  - bW - PAD);
+              const bMaxY = Math.max(PAD, rect.height - bH - PAD - bBob);
+
+              aX = clamp(aX + ux*push, PAD, aMaxX);
+              aY = clamp(aY + uy*push, PAD + aBob, aMaxY);
+              bX = clamp(bX - ux*push, PAD, bMaxX);
+              bY = clamp(bY - uy*push, PAD + bBob, bMaxY);
+
+              a.style.left = `${aX}px`; a.style.top = `${aY}px`;
+              b.style.left = `${bX}px`; b.style.top = `${bY}px`;
+              anyMoved = true;
+            }
+          }
+        }
+        if (!anyMoved) break; // settled
+      }
+    });
+  }
+
   // Sprites (visual feedback for purchases)
   function refreshSprites(){
     document.querySelectorAll('.spr').forEach(x=>x.remove());
     for(let i=0;i<S.mush;i++) placeSprite('🍄');
     for(let i=0;i<S.fairy;i++) placeSprite('🧚‍♀️', true);
     for(let i=0;i<S.frog;i++) placeSprite('🐸');
-  }
-  function placeSprite(emoji, floating=false){
-    const plots = document.querySelectorAll('.plot');
-    if(!plots.length) return;
-    const p = plots[Math.floor(Math.random()*plots.length)];
-    const span = document.createElement('span');
-    span.className = 'spr' + (floating ? ' float' : '');
-    span.textContent = emoji;
-    span.style.left = (10 + Math.random()*70) + '%';
-    span.style.top  = (15 + Math.random()*60) + '%';
-    p.appendChild(span);
   }
 
   // Tap sparkles
@@ -528,7 +649,7 @@
   // Actions
   function collect(e){
     S.amount += S.perTap;
-    playPop(540); // NEW: soft pop for Collect (distinct pitch)
+    playPop(540);
     maybeBest(); updateUI(); saveState();
     if(e){ sparkleAt(e.clientX, e.clientY); }
   }
@@ -540,9 +661,12 @@
     S.amount -= cost;
     S[type] += 1;
 
-    if(type==='mush') { S.perSec += 1; placeSprite('🍄'); playPop(420); }   // ✅ pop
-    if(type==='fairy'){ S.perSec += 3; placeSprite('🧚‍♀️', true); playPop(650); } // ✅ higher pitch
-    if(type==='frog') { S.perTap += 1; placeSprite('🐸'); playPop(320); }   // ✅ lower pitch
+    if(type==='mush') { S.perSec += 1; placeSprite('🍄'); playPop(420); }
+    if(type==='fairy'){ S.perSec += 3; placeSprite('🧚‍♀️', true); playPop(650); }
+    if(type==='frog') { S.perTap += 1; placeSprite('🐸'); playPop(320); }
+
+    // After adding, quick recenter to be safe
+    recenterSprites();
 
     updateUI(); saveState();
   }
@@ -577,6 +701,13 @@
   }
   window.addEventListener('resize', onResize);
 
+  // Keep sprites sane when layout shifts
+  window.addEventListener('resize', recenterSprites);
+  window.addEventListener('orientationchange', recenterSprites);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(recenterSprites);
+  }
+
   // Wire UI
   document.getElementById('btnStart').addEventListener('click', startGame);
   document.getElementById('btnHowtoStart').addEventListener('click', openHowto);
@@ -593,7 +724,7 @@
   // Init
   updateUI(); onResize();
 </script>
-  <script>
+<script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(console.error);
@@ -602,11 +733,3 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
