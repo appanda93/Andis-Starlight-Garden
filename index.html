@@ -861,12 +861,21 @@
   document.getElementById('musicBtn').addEventListener('click', toggleMusic);
   document.getElementById('resetBtn').addEventListener('click', resetState);
 
-  // Guard against scroll-jumps while pressing Collect on iOS
-  const cb = document.getElementById('collectBtn');
-  ['touchstart','touchmove'].forEach(ev =>
-    cb.addEventListener(ev, (e)=>{ e.preventDefault(); }, { passive:false })
-  );
-  cb.addEventListener('click', collect);
+ // Guard against scroll-jumps without killing the click on iOS
+const cb = document.getElementById('collectBtn');
+
+// Prevent accidental page scroll while finger moves on the button
+cb.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+
+// Fire the action on touchend (iOS-safe), and still support mouse/keyboard click
+cb.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const t = (e.changedTouches && e.changedTouches[0]) || e;
+  collect(t);
+}, { passive: false });
+
+cb.addEventListener('click', collect);
+
 
   document.getElementById('buyMush').addEventListener('click', ()=>buy('mush'));
   document.getElementById('buyFairy').addEventListener('click', ()=>buy('fairy'));
@@ -888,3 +897,4 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+
