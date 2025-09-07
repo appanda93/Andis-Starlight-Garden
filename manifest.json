@@ -1,15 +1,33 @@
 {
   "name": "Andi's Starlight Garden",
-  "short_name": "Starlight",
+  "short_name": "Starlight Garden",
   "start_url": ".",
-  "scope": ".",
   "display": "standalone",
-  "background_color": "#ffe6f0",
-  "theme_color": "#e6c7ff",
+  "background_color": "#a8d0f0",
+  "theme_color": "#a8d0f0",
   "icons": [
-  { "src": "icon-192-forest-fairy.png", "sizes": "192x192", "type": "image/png" },
-  { "src": "icon-512-forest-fairy.png", "sizes": "512x512", "type": "image/png" },
-  { "src": "icon-512-forest-fairy-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any" }
-]
+    {
+      "src": "apple-touch-icon-180-frog.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon-167-frog.png",
+      "sizes": "167x167",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon-152-frog.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon-120-frog.png",
+      "sizes": "120x120",
+      "type": "image/png"
+    }
+  ]
 }
+
+
 
