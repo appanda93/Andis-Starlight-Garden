@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+/>
 <title>Andi's Starlight Garden 🌟</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -46,7 +49,7 @@
     display:grid;
     justify-items:center;
     align-items:start;
-    min-height:100dvh; /* ← use dvh, not vh */
+    min-height:100dvh; /* dvh to avoid address bar yo-yo */
     background:linear-gradient(135deg,#ffe6f0,#e6f7ff);
     color:var(--ink); font-family:'Poppins',sans-serif;
     position:relative;
@@ -175,9 +178,22 @@
     width:100%; margin-top:10px; padding:16px 18px; border:none; border-radius:14px;
     background:linear-gradient(135deg,#f7d9f0,#e6c7ff); color:var(--ink);
     font-weight:700; font-size:18px; box-shadow:0 6px 14px rgba(0,0,0,.15); cursor:pointer; transition:.15s;
+    touch-action: manipulation; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
   }
   #collectBtn:active{transform:scale(.98)}
-  @media (max-width: 600px){ #collectBtn{ position:sticky; bottom:8px; z-index:5 } }
+
+  @media (max-width: 600px){
+    /* keep button anchored; avoid scroll jumps */
+    #collectBtn{
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: max(8px, env(safe-area-inset-bottom));
+      width: calc(100vw - 24px);
+      z-index: 5;
+    }
+    .bottom-spacer{ height: 72px; } /* space so content isn't covered */
+  }
 
   .shop{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px}
   .card{
@@ -276,6 +292,7 @@
     </div>
 
     <button id="collectBtn">Collect Starlight ✨</button>
+    <div class="bottom-spacer" aria-hidden="true"></div>
 
     <div class="shop">
       <div class="card">
@@ -297,7 +314,7 @@
         <button class="buyBtn" id="buyFrog">Befriend Frog</button>
       </div>
 
-      <!-- NEW: Mermaids (unlock at 1,000,000 lifetime) -->
+      <!-- Mermaids (unlock at 1,000,000 lifetime) -->
       <div class="card" id="cardMermaid">
         <h3>🧜‍♀️ Mermaids</h3>
         <p>+25 starlight / sec</p>
@@ -362,6 +379,8 @@
   let S = loadState();
   let lastTick = performance.now();
   let loopId = null;
+  let intervalId = null; // fallback when hidden / iOS throttles
+  let carryPerSec = 0;   // accumulate fractional gains to whole integers
   let celebratedThisSession = false;
 
   // Music
@@ -461,7 +480,7 @@
         const obj = JSON.parse(raw);
         const now = Date.now();
         const elapsed = Math.max(0, Math.floor((now - (obj.last||now))/1000));
-        obj.amount += obj.perSec * elapsed;            // offline
+        obj.amount += obj.perSec * elapsed;                           // offline
         obj.totalEarned = (obj.totalEarned || 0) + obj.perSec * elapsed; // lifetime
         obj.last = now;
         localStorage.setItem(KEY, JSON.stringify(obj));
@@ -701,15 +720,42 @@
     })();
   }
 
-  // ====== Loop ======
+  // ====== Game Loop (robust accrual) ======
   function loop(ts){
     const dt = Math.max(0,(ts - lastTick)/1000);
     lastTick = ts;
-    S.amount += S.perSec * dt;
-    S.totalEarned = (S.totalEarned || 0) + S.perSec * dt; // lifetime accrual
-    maybeBest(); updateUI();
+
+    // accumulate fractional perSec, apply whole amounts
+    carryPerSec += (S.perSec * dt);
+    const whole = Math.floor(carryPerSec);
+    if (whole > 0) {
+      S.amount += whole;
+      S.totalEarned = (S.totalEarned || 0) + whole;
+      carryPerSec -= whole;
+    }
+
+    maybeBest();
+    updateUI();
+
     loopId = requestAnimationFrame(loop);
   }
+
+  function startGameLoop(){
+    if (loopId) cancelAnimationFrame(loopId);
+    if (intervalId) { clearInterval(intervalId); intervalId = null; }
+    lastTick = performance.now();
+    loopId = requestAnimationFrame(loop);
+  }
+
+  // keep accrual going if tab hidden / rAF throttled
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (!intervalId) intervalId = setInterval(() => loop(performance.now()), 250);
+    } else {
+      if (intervalId) { clearInterval(intervalId); intervalId = null; }
+      if (!loopId) startGameLoop();
+    }
+  });
 
   // ====== Actions ======
   function collect(e){
@@ -772,8 +818,7 @@
     document.getElementById('app').style.display='block';
     celebratedThisSession = false;
     ensureMusic(); buildPlots(true); updateUI();
-    cancelAnimationFrame(loopId); lastTick = performance.now();
-    loopId = requestAnimationFrame(loop);
+    startGameLoop();
   }
 
   // ====== Smart resize handling (no flashing on iOS scroll) ======
@@ -815,7 +860,14 @@
   document.getElementById('closeHowto').addEventListener('click', closeHowto);
   document.getElementById('musicBtn').addEventListener('click', toggleMusic);
   document.getElementById('resetBtn').addEventListener('click', resetState);
-  document.getElementById('collectBtn').addEventListener('click', collect);
+
+  // Guard against scroll-jumps while pressing Collect on iOS
+  const cb = document.getElementById('collectBtn');
+  ['touchstart','touchmove'].forEach(ev =>
+    cb.addEventListener(ev, (e)=>{ e.preventDefault(); }, { passive:false })
+  );
+  cb.addEventListener('click', collect);
+
   document.getElementById('buyMush').addEventListener('click', ()=>buy('mush'));
   document.getElementById('buyFairy').addEventListener('click', ()=>buy('fairy'));
   document.getElementById('buyFrog').addEventListener('click', ()=>buy('frog'));
