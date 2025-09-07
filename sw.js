@@ -1,19 +1,15 @@
-// sw.js
-const CACHE = "starlight-v3"; // bump this when you change files
-const SCOPE = self.registration ? self.registration.scope : "./";
-// sw.js
-const CACHE = "starlight-v6"; // bump this
+const CACHE_NAME = "starlight-v3"; // bump version here
 const ASSETS = [
-  "./", "index.html", "manifest.json",
-  "icons8-star-64.png", "Tokyo.mp3", "pwa-bg.png",
-  "icon-192-forest-fairy.png",
-  "icon-512-forest-fairy.png",
-  "icon-512-forest-fairy-maskable.png",
-  "apple-touch-icon-180-forest-fairy.png",
-  "apple-touch-icon-167-forest-fairy.png",
-  "apple-touch-icon-152-forest-fairy.png",
-  "apple-touch-icon-120-forest-fairy.png"
+  "/",
+  "/index.html",
+  "/manifest.json",
+  "/apple-touch-icon-180-frog.png",
+  "/apple-touch-icon-167-frog.png",
+  "/apple-touch-icon-152-frog.png",
+  "/apple-touch-icon-120-frog.png"
+  // add CSS/JS/etc. as needed
 ];
+
 // ...install/activate/fetch as before
 
 
@@ -36,4 +32,5 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request)));
 });
+
 
