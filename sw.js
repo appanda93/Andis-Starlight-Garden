@@ -1,4 +1,4 @@
-const CACHE_NAME = "starlight-v3"; // bump version here
+const CACHE_NAME = "starlight-v4"; // bump version here
 const ASSETS = [
   "/",
   "/index.html",
@@ -32,5 +32,6 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request)));
 });
+
 
 
