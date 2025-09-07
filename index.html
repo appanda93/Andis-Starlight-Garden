@@ -16,7 +16,7 @@
 
 <!-- iOS Home Screen icon (use your encoded filename or rename to a clean one) -->
 <link rel="apple-touch-icon"
-      href="https://appanda93.github.io/Andis-Starlight-Garden/apple-touch-icon-180x180.png?v=3">
+      href="https://appanda93.github.io/Andis-Starlight-Garden/apple-touch-icon-180x180%20(1).png?v=3">
 <meta name="apple-mobile-web-app-title" content="Andi's Starlight Garden">
 
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -40,6 +40,8 @@
     --shadow:rgba(200,150,255,.4);
   }
   html,body{height:100%}
+  /* prevent iOS rubber-band + scroll chaining */
+  html, body { overscroll-behavior-y: contain; }
 
   /* stabilized height on iOS */
   body{
@@ -178,7 +180,12 @@
     font-weight:700; font-size:18px; box-shadow:0 6px 14px rgba(0,0,0,.15); cursor:pointer; transition:.15s;
     touch-action: manipulation; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
   }
+  /* Desktop press effect */
   #collectBtn:active{ transform: scale(.98); }
+  /* Touch devices: avoid transform to stop viewport jiggle */
+  @media (hover: none) and (pointer: coarse){
+    #collectBtn:active{ transform:none; filter:brightness(.96); }
+  }
 
   .shop{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px}
   .card{
@@ -316,7 +323,7 @@
     </div>
   </div>
 
-  <!-- How To Modal -->
+  <!-- How To Modal (updated) -->
   <div class="backdrop" id="howto">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
       <h2 id="howtoTitle">How to Play 🌟</h2>
@@ -324,8 +331,8 @@
         <li><b>Goal:</b> Use Starlight to grow your garden. Plant mushrooms, invite fairies, and befriend frogs.</li>
         <li><b>Collect:</b> Tap the big button to gather Starlight.</li>
         <li><b>Idle:</b> The garden keeps growing when closed — you’ll get offline earnings next time.</li>
-        <li><b>Idle Faster:</b> Adding friends increases your idle time earnings. 🍄 Mushrooms gain +1/s, 🧚 Fairies gain +3/s, and b🐸 Frogs gain +1/tap.</li>
-        <li><b>Unlock:</b>Unlock Mermaids 🧜‍♀️ after gaining 1,000,000 Starlight.</li>
+        <li><b>Idle Faster:</b> Adding friends increases your idle time earnings. 🍄 Mushrooms gain +1/s, 🧚 Fairies gain +3/s, and 🐸 Frogs gain +1/tap.</li>
+        <li><b>Unlock:</b> Unlock Mermaids 🧜‍♀️ after gaining 1,000,000 Starlight.</li>
         <li><b>Zen:</b> Growing a Starlight Garden brings you joy and the tranquility you seek.</li>
       </ul>
       <div class="actions"><button id="closeHowto">Got it ✨</button></div>
@@ -877,5 +884,3 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
-
-
