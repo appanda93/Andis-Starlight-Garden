@@ -40,12 +40,13 @@
   }
   html,body{height:100%}
 
+  /* stabilized height on iOS */
   body{
     margin:0;
     display:grid;
     justify-items:center;
     align-items:start;
-    min-height:100vh;
+    min-height:100dvh; /* ← use dvh, not vh */
     background:linear-gradient(135deg,#ffe6f0,#e6f7ff);
     color:var(--ink); font-family:'Poppins',sans-serif;
     position:relative;
@@ -224,7 +225,7 @@
   }
   @keyframes spark{from{opacity:1; transform:translate(-50%,-50%) scale(1)} to{opacity:0; transform:translate(-50%,-140%) scale(.8)}}
 
-  /* Responsive grid count (CSS-driven; JS now respects this) */
+  /* Responsive grid count (CSS-driven; JS respects this) */
   @media(max-width:560px){
     .shop{grid-template-columns:1fr}
     .plots{grid-template-columns:repeat(4,1fr)}
@@ -295,6 +296,21 @@
         <p>Friends: <span id="frogCnt">0</span> · Cost: <span id="frogCost">30</span></p>
         <button class="buyBtn" id="buyFrog">Befriend Frog</button>
       </div>
+
+      <!-- NEW: Mermaids (unlock at 1,000,000 lifetime) -->
+      <div class="card" id="cardMermaid">
+        <h3>🧜‍♀️ Mermaids</h3>
+        <p>+25 starlight / sec</p>
+        <p>
+          Allies: <span id="mermaidCnt">0</span> ·
+          Cost: <span id="mermaidCost">100,000</span>
+        </p>
+        <button class="buyBtn" id="buyMermaid" disabled title="Reach 1,000,000 total to unlock">Summon Mermaid</button>
+        <p id="mermaidLockText" style="margin-top:6px; font-size:13px; opacity:.8">
+          🔒 Unlock at 1,000,000 total starlight (Progress:
+          <span id="mermaidProg">0%</span>)
+        </p>
+      </div>
     </div>
   </div>
 
@@ -334,6 +350,13 @@
     frogCnt: document.getElementById('frogCnt'),
     frogCost: document.getElementById('frogCost'),
     howto: document.getElementById('howto'),
+
+    // Mermaid UI
+    mermaidCnt: document.getElementById('mermaidCnt'),
+    mermaidCost: document.getElementById('mermaidCost'),
+    buyMermaid: document.getElementById('buyMermaid'),
+    mermaidProg: document.getElementById('mermaidProg'),
+    mermaidLockText: document.getElementById('mermaidLockText'),
   };
 
   let S = loadState();
@@ -344,7 +367,7 @@
   // Music
   let music = null, musicOn = false;
 
-  // ====== Pop SFX (Web Audio) ======
+  // Pop SFX
   let audioCtx = null;
   function playPop(pitch = 520){
     try{
@@ -372,6 +395,13 @@
   function rand(min, max){ return Math.random() * (max - min) + min; }
   function clamp(v, min, max){ return Math.min(Math.max(v, min), max); }
 
+  // map normalized [0,1] to pixels with padding
+  function lerpPosition(nx, plotW, sprW, pad){
+    const min = pad;
+    const max = Math.max(pad, plotW - sprW - pad);
+    return min + nx * (max - min);
+  }
+
   // Track current column layout so we only rebuild on actual breakpoint changes
   let COLS = null;
   function computeCols(){
@@ -383,6 +413,7 @@
   }
 
   let _lastVw = window.innerWidth;
+  let _lastPlotsW = 0;
 
   // ====== Biomes ======
   function chooseBiome(){
@@ -402,6 +433,7 @@
     if (!force && COLS === cols) {
       refreshSprites();
       recenterSprites();
+      _lastPlotsW = Math.round(els.plots.clientWidth);
       return;
     }
     COLS = cols;
@@ -418,6 +450,7 @@
 
     refreshSprites();
     recenterSprites();
+    _lastPlotsW = Math.round(els.plots.clientWidth);
   }
 
   // ====== State load/save ======
@@ -428,32 +461,47 @@
         const obj = JSON.parse(raw);
         const now = Date.now();
         const elapsed = Math.max(0, Math.floor((now - (obj.last||now))/1000));
-        obj.amount += obj.perSec * elapsed; // offline
+        obj.amount += obj.perSec * elapsed;            // offline
+        obj.totalEarned = (obj.totalEarned || 0) + obj.perSec * elapsed; // lifetime
         obj.last = now;
         localStorage.setItem(KEY, JSON.stringify(obj));
         return obj;
       }
     }catch(e){}
-    return { amount:0, best:0, perSec:0, perTap:1, mush:0, fairy:0, frog:0, last:Date.now() };
+    return {
+      amount:0, best:0, perSec:0, perTap:1,
+      mush:0, fairy:0, frog:0, mermaid:0,
+      totalEarned: 0,
+      last:Date.now()
+    };
   }
   function saveState(){ S.last = Date.now(); localStorage.setItem(KEY, JSON.stringify(S)); }
   function resetState(){
     if(confirm('Reset your Starlight Garden progress?')){
       localStorage.removeItem(KEY);
-      S = {amount:0,best:0,perSec:0,perTap:1,mush:0,fairy:0,frog:0,last:Date.now()};
+      S = {
+        amount:0, best:0, perSec:0, perTap:1,
+        mush:0, fairy:0, frog:0, mermaid:0,
+        totalEarned: 0,
+        last:Date.now()
+      };
       celebratedThisSession = false;
       updateUI(); refreshSprites(); recenterSprites();
     }
   }
 
   // ====== Costs/UI ======
-  const base = { mush:10, fairy:50, frog:30 };
+  const UNLOCK_MERMAID_AT = 1_000_000;
+
+  const base = { mush:10, fairy:50, frog:30, mermaid:100000 };
   function costOf(type,count){
-    const f = {mush:1.15, fairy:1.18, frog:1.16}[type];
+    const f = {mush:1.15, fairy:1.18, frog:1.16, mermaid:1.22}[type];
     return Math.floor(base[type] * Math.pow(f, count));
   }
 
   function n(x){ return Math.floor(x).toLocaleString(); }
+
+  function isMermaidUnlocked(){ return (S.totalEarned || 0) >= UNLOCK_MERMAID_AT; }
 
   function updateUI(){
     document.getElementById('starlight').textContent = n(S.amount);
@@ -461,12 +509,25 @@
     document.getElementById('rate').textContent = n(S.perSec);
     document.getElementById('tap').textContent = n(S.perTap);
     document.getElementById('bestOnStart').textContent = 'Best: ' + n(S.best);
+
     document.getElementById('mushCnt').textContent = S.mush;
     document.getElementById('fairyCnt').textContent = S.fairy;
     document.getElementById('frogCnt').textContent = S.frog;
+
+    els.mermaidCnt.textContent = S.mermaid || 0;
+
     document.getElementById('mushCost').textContent = n(costOf('mush',S.mush));
     document.getElementById('fairyCost').textContent = n(costOf('fairy',S.fairy));
     document.getElementById('frogCost').textContent = n(costOf('frog',S.frog));
+
+    els.mermaidCost.textContent = n(costOf('mermaid', S.mermaid || 0));
+
+    const unlocked = isMermaidUnlocked();
+    els.buyMermaid.disabled = !unlocked || S.amount < costOf('mermaid', S.mermaid||0);
+    els.mermaidLockText.style.display = unlocked ? 'none' : 'block';
+
+    const prog = Math.min(100, Math.floor(((S.totalEarned||0)/UNLOCK_MERMAID_AT)*100));
+    els.mermaidProg.textContent = prog + '%';
   }
 
   function maybeBest(){
@@ -476,7 +537,7 @@
     }
   }
 
-  // ====== Sprite logic: no edges, no overlaps ======
+  // ====== Sprite logic: no edges, no overlaps, stable on resize ======
   function overlaps(a, b, margin = 2){
     const ax = a.left,  ay = a.top,  aw = a.width,  ah = a.height;
     const bx = b.left,  by = b.top,  bw = b.width, bh = b.height;
@@ -508,7 +569,6 @@
     span.style.top  = '0px';
     p.appendChild(span);
 
-    // Measure plot + sprite
     const rect = p.getBoundingClientRect();
     const sprW = span.offsetWidth;
     const sprH = span.offsetHeight;
@@ -519,27 +579,28 @@
     const maxX = Math.max(PAD, rect.width  - sprW - PAD);
     const maxY = Math.max(PAD, rect.height - sprH - PAD - bobRoom);
 
-    // Try several random positions that don't overlap existing .spr in this plot
     const existing = Array.from(p.querySelectorAll('.spr')).filter(s => s !== span);
     const attempts = 20;
-    let placed = false, x = PAD, y = PAD;
+    let x = PAD, y = PAD;
 
     for(let i=0;i<attempts;i++){
-      x = rand(PAD, maxX);
-      y = rand(PAD + bobRoom, maxY);
-
-      const candidate = { left: x, top: y, width: sprW, height: sprH };
-      let hit = false;
-      for (const other of existing){
-        const obox = getSpanBox(other);
-        if (overlaps(candidate, obox, 3)){ hit = true; break; }
-      }
-      if (!hit){ placed = true; break; }
+      const tryX = rand(PAD, maxX);
+      const tryY = rand(PAD + bobRoom, maxY);
+      const candidate = { left: tryX, top: tryY, width: sprW, height: sprH };
+      const hit = existing.some(other => overlaps(candidate, getSpanBox(other), 3));
+      if (!hit){ x = tryX; y = tryY; break; }
     }
 
-    // If we failed to find a non-overlapping spot, just clamp to safe area
-    span.style.left = `${clamp(x, PAD, maxX)}px`;
-    span.style.top  = `${clamp(y, PAD + bobRoom, maxY)}px`;
+    // Save normalized coords so we can restore stable relative positions on resize
+    const nx = (x - PAD) / Math.max(1, (rect.width  - sprW - PAD*2));
+    const ny = (y - PAD - bobRoom) / Math.max(1, (rect.height - sprH - PAD*2 - bobRoom));
+
+    span.dataset.nx = String(Math.min(1, Math.max(0, nx)));
+    span.dataset.ny = String(Math.min(1, Math.max(0, ny)));
+    span.dataset.bob = floating ? '1' : '0';
+
+    span.style.left = `${x}px`;
+    span.style.top  = `${y}px`;
     span.style.visibility = 'visible';
   }
 
@@ -549,22 +610,23 @@
       const rect = p.getBoundingClientRect();
       const sprites = Array.from(p.querySelectorAll('.spr'));
 
-      // Clamp inside bounds
+      // Restore from normalized coords
       sprites.forEach(span => {
         const sprW = span.offsetWidth;
         const sprH = span.offsetHeight;
-        const bobRoom = span.classList.contains('float') ? 8 : 0;
-        const maxX = Math.max(PAD, rect.width  - sprW - PAD);
-        const maxY = Math.max(PAD, rect.height - sprH - PAD - bobRoom);
+        const bobRoom = span.dataset.bob === '1' ? 8 : 0;
 
-        const curLeft = parseFloat(span.style.left) || 0;
-        const curTop  = parseFloat(span.style.top)  || 0;
+        const nx = span.dataset.nx != null ? parseFloat(span.dataset.nx) : 0.5;
+        const ny = span.dataset.ny != null ? parseFloat(span.dataset.ny) : 0.5;
 
-        span.style.left = `${clamp(curLeft, PAD, maxX)}px`;
-        span.style.top  = `${clamp(curTop,  PAD + bobRoom, maxY)}px`;
+        const left = lerpPosition(nx, rect.width,  sprW, PAD);
+        const top  = lerpPosition(ny, rect.height - bobRoom, sprH, PAD) + bobRoom;
+
+        span.style.left = `${left}px`;
+        span.style.top  = `${top}px`;
       });
 
-      // Light de-overlap pass
+      // Gentle de-overlap pass, then update normalized to persist nudges
       const maxIters = 16;
       for (let iter=0; iter<maxIters; iter++){
         let anyMoved = false;
@@ -585,8 +647,8 @@
               let bX = parseFloat(b.style.left) || 0;
               let bY = parseFloat(b.style.top)  || 0;
 
-              const aBob = a.classList.contains('float') ? 8 : 0;
-              const bBob = b.classList.contains('float') ? 8 : 0;
+              const aBob = a.dataset.bob === '1' ? 8 : 0;
+              const bBob = b.dataset.bob === '1' ? 8 : 0;
 
               const aW = a.offsetWidth, aH = a.offsetHeight;
               const bW = b.offsetWidth, bH = b.offsetHeight;
@@ -604,6 +666,12 @@
               a.style.left = `${aX}px`; a.style.top = `${aY}px`;
               b.style.left = `${bX}px`; b.style.top = `${bY}px`;
               anyMoved = true;
+
+              // update normalized after nudge so future resizes keep this separation
+              a.dataset.nx = String((aX - PAD) / Math.max(1, (rect.width  - aW - PAD*2)));
+              a.dataset.ny = String((aY - PAD - aBob) / Math.max(1, (rect.height - aH - PAD*2 - aBob)));
+              b.dataset.nx = String((bX - PAD) / Math.max(1, (rect.width  - bW - PAD*2)));
+              b.dataset.ny = String((bY - PAD - bBob) / Math.max(1, (rect.height - bH - PAD*2 - bBob)));
             }
           }
         }
@@ -638,6 +706,7 @@
     const dt = Math.max(0,(ts - lastTick)/1000);
     lastTick = ts;
     S.amount += S.perSec * dt;
+    S.totalEarned = (S.totalEarned || 0) + S.perSec * dt; // lifetime accrual
     maybeBest(); updateUI();
     loopId = requestAnimationFrame(loop);
   }
@@ -645,21 +714,27 @@
   // ====== Actions ======
   function collect(e){
     S.amount += S.perTap;
+    S.totalEarned = (S.totalEarned || 0) + S.perTap; // lifetime taps
     playPop(540);
     maybeBest(); updateUI(); saveState();
     if(e){ sparkleAt(e.clientX, e.clientY); }
   }
 
   function buy(type){
-    const cost = costOf(type, S[type]);
+    const cost = costOf(type, S[type] || 0);
+
+    // Gate mermaid by lifetime unlock
+    if (type === 'mermaid' && !isMermaidUnlocked()) return;
+
     if(S.amount < cost) return;
 
     S.amount -= cost;
-    S[type] += 1;
+    S[type] = (S[type] || 0) + 1;
 
-    if(type==='mush') { S.perSec += 1; placeSprite('🍄'); playPop(420); }
-    if(type==='fairy'){ S.perSec += 3; placeSprite('🧚‍♀️', true); playPop(650); }
-    if(type==='frog') { S.perTap += 1; placeSprite('🐸'); playPop(320); }
+    if(type==='mush')   { S.perSec += 1;  placeSprite('🍄');            playPop(420); }
+    if(type==='fairy')  { S.perSec += 3;  placeSprite('🧚‍♀️', true);   playPop(650); }
+    if(type==='frog')   { S.perTap += 1;  placeSprite('🐸');            playPop(320); }
+    if(type==='mermaid'){ S.perSec += 25; placeSprite('🧜‍♀️', true);   playPop(560); }
 
     recenterSprites();
     updateUI(); saveState();
@@ -701,20 +776,28 @@
     loopId = requestAnimationFrame(loop);
   }
 
-  // ====== Smart resize handling (no flashing on mobile) ======
+  // ====== Smart resize handling (no flashing on iOS scroll) ======
   const handleResize = debounce(() => {
-    const vw = window.innerWidth;
-    const breakpointChanged = computeCols() !== COLS;
-
-    // Keep canvas matched to viewport; harmless if called often
+    // Keep canvas matched (cheap)
     FX.width = window.innerWidth; 
     FX.height = window.innerHeight;
 
-    if (breakpointChanged || Math.abs(vw - _lastVw) >= 1) {
-      buildPlots(true);           // rebuild only on genuine layout change
+    const vw = window.innerWidth;
+    const breakpointChanged = computeCols() !== COLS;
+
+    // Check width of plots container; ignore height-only jiggle
+    const plotsW = els.plots ? Math.round(els.plots.clientWidth) : 0;
+    const plotsWidthChanged = Math.abs(plotsW - _lastPlotsW) >= 1;
+
+    if (breakpointChanged) {
+      buildPlots(true);           // 4↔5 columns: rebuild
+    } else if (plotsWidthChanged) {
+      recenterSprites();          // width changed (e.g., rotation): recompute positions
+      _lastPlotsW = plotsW;
     } else {
-      recenterSprites();          // height-only jiggle -> clamp sprites
+      // height-only jiggle from iOS address bar → ignore
     }
+
     _lastVw = vw;
   }, 120);
 
@@ -736,6 +819,7 @@
   document.getElementById('buyMush').addEventListener('click', ()=>buy('mush'));
   document.getElementById('buyFairy').addEventListener('click', ()=>buy('fairy'));
   document.getElementById('buyFrog').addEventListener('click', ()=>buy('frog'));
+  document.getElementById('buyMermaid').addEventListener('click', ()=>buy('mermaid'));
   document.getElementById('garden').addEventListener('click', (e)=>collect(e));
 
   // ====== Init ======
