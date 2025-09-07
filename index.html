@@ -14,16 +14,15 @@
 
 <link rel="manifest" href="manifest.json">
 
-<!-- iOS Home Screen icon -->
+<!-- iOS Home Screen icon (use your encoded filename or rename to a clean one) -->
 <link rel="apple-touch-icon"
-      href="https://appanda93.github.io/Andis-Starlight-Garden/apple-touch-icon-180x180.png?v=3">
+      href="https://appanda93.github.io/Andis-Starlight-Garden/apple-touch-icon-180x180%20(1).png?v=3">
 <meta name="apple-mobile-web-app-title" content="Andi's Starlight Garden">
 
-
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
-<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
-<link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
 
 <meta name="theme-color" content="#e6c7ff">
 
@@ -172,58 +171,14 @@
     box-shadow: inset 0 0 18px rgba(190,160,255,.25), 0 6px 12px rgba(0,0,0,.08);
   }
 
-  /* Collect + shop */
+  /* Collect + shop (button in normal flow, under grid) */
   #collectBtn{
-    width:100%; margin-top:10px; padding:16px 18px; border:none; border-radius:14px;
+    width:100%; margin:12px 0 16px; padding:16px 18px; border:none; border-radius:14px;
     background:linear-gradient(135deg,#f7d9f0,#e6c7ff); color:var(--ink);
     font-weight:700; font-size:18px; box-shadow:0 6px 14px rgba(0,0,0,.15); cursor:pointer; transition:.15s;
     touch-action: manipulation; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
   }
-  #collectBtn:active{transform:scale(.98); }
-
-  /* Mobile: keep centered while pressing */
-@media (max-width: 600px){
-  #collectBtn{
-    position: fixed;
-    left: 50%;
-    transform: translateX(-50%); /* center */
-    bottom: max(8px, env(safe-area-inset-bottom));
-    width: calc(100vw - 24px);
-    z-index: 5;
-    touch-action: manipulation;
-    -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    will-change: transform; /* smoother */
-  }
-  #collectBtn:active{
-    transform: translateX(-50%) scale(.98); /* <-- keep center + press */
-  }
-}
-
-/* Button lives under the grid, in normal document flow */
-#collectBtn{
-  width: 100%;
-  margin: 12px 0 16px;
-  padding: 16px 18px;
-  border: none;
-  border-radius: 14px;
-  background: linear-gradient(135deg,#f7d9f0,#e6c7ff);
-  color: var(--ink);
-  font-weight: 700;
-  font-size: 18px;
-  box-shadow: 0 6px 14px rgba(0,0,0,.15);
-  cursor: pointer;
-  transition: .15s;
-  touch-action: manipulation; 
-  -webkit-user-select: none; 
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* keep the nice press animation without affecting layout */
-#collectBtn:active{ transform: scale(.98); }
-
-/* no spacer needed anymore */
-.bottom-spacer{ display: none; }
+  #collectBtn:active{ transform: scale(.98); }
 
   .shop{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px}
   .card{
@@ -321,8 +276,8 @@
       <div class="plots" id="plots"></div>
     </div>
 
+    <!-- Collect lives here, under the grid -->
     <button id="collectBtn">Collect Starlight ✨</button>
-    <div class="bottom-spacer" aria-hidden="true"></div>
 
     <div class="shop">
       <div class="card">
@@ -367,10 +322,9 @@
       <h2 id="howtoTitle">How to Play 🌟</h2>
       <ul>
         <li><b>Goal:</b> Use Starlight to grow your garden. Plant mushrooms, invite fairies, and befriend frogs.</li>
-        <li><b>Collect:</b> Tap the big button to gather Starlight.</li>
-         <li><b>Idle:</b> The garden keeps growing when closed — you’ll get offline earnings next time.</li>
-        <li><b>Grow Faster:</b> Each friend will earn you extra idle Starlight. 🍄 Mushrooms gain +1/s, 🧚 Fairies gain +3/s, and 🐸 Frogs gain +1/tap.</li>
-       <li><b>Mermaids:</b> Gather 1,000,000 Starlight to unlock 🧜‍♀️ mermaids.</li>
+        <li><b>Collect:</b> Tap the big button to gather Starlight. Time will also accrue Starlight in your pocket.</li>
+        <li><b>Grow:</b> Buy 🍄 Mushrooms (+1/s), invite 🧚 Fairies (+3/s), and befriend 🐸 Frogs (+1/tap).</li>
+        <li><b>Idle:</b> The garden keeps growing when closed — you’ll get offline earnings next time.</li>
         <li><b>Zen:</b> Growing a Starlight Garden brings you joy and the tranquility you seek.</li>
       </ul>
       <div class="actions"><button id="closeHowto">Got it ✨</button></div>
@@ -511,7 +465,7 @@
         const obj = JSON.parse(raw);
         const now = Date.now();
         const elapsed = Math.max(0, Math.floor((now - (obj.last||now))/1000));
-        obj.amount += obj.perSec * elapsed;                           // offline
+        obj.amount += obj.perSec * elapsed;                              // offline
         obj.totalEarned = (obj.totalEarned || 0) + obj.perSec * elapsed; // lifetime
         obj.last = now;
         localStorage.setItem(KEY, JSON.stringify(obj));
@@ -794,7 +748,7 @@
     S.totalEarned = (S.totalEarned || 0) + S.perTap; // lifetime taps
     playPop(540);
     maybeBest(); updateUI(); saveState();
-    if(e){ sparkleAt(e.clientX, e.clientY); }
+    if(e && e.clientX!=null && e.clientY!=null){ sparkleAt(e.clientX, e.clientY); }
   }
 
   function buy(type){
@@ -892,21 +846,15 @@
   document.getElementById('musicBtn').addEventListener('click', toggleMusic);
   document.getElementById('resetBtn').addEventListener('click', resetState);
 
- // Guard against scroll-jumps without killing the click on iOS
-const cb = document.getElementById('collectBtn');
-
-// Prevent accidental page scroll while finger moves on the button
-cb.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
-
-// Fire the action on touchend (iOS-safe), and still support mouse/keyboard click
-cb.addEventListener('touchend', (e) => {
-  e.preventDefault();
-  const t = (e.changedTouches && e.changedTouches[0]) || e;
-  collect(t);
-}, { passive: false });
-
-cb.addEventListener('click', collect);
-
+  // Guard against scroll-jumps while pressing Collect on iOS
+  const cb = document.getElementById('collectBtn');
+  cb.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+  cb.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    const t = (e.changedTouches && e.changedTouches[0]) || e;
+    collect(t);
+  }, { passive: false });
+  cb.addEventListener('click', collect);
 
   document.getElementById('buyMush').addEventListener('click', ()=>buy('mush'));
   document.getElementById('buyFairy').addEventListener('click', ()=>buy('fairy'));
@@ -928,9 +876,3 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
-
-
-
-
-
-
