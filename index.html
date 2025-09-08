@@ -311,9 +311,11 @@
         <input id="gardenNameInput" type="text" maxlength="60" placeholder="Name your garden…">
       </div>
 
-      <div style="margin-top:10px">
+      <div style="margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
         <button id="btnStart">Start Garden</button>
         <button id="btnHowtoStart">How to Play</button>
+        <!-- NEW: Credits button -->
+        <button id="btnCreditsStart">Credits</button>
       </div>
     </div>
   </div>
@@ -406,6 +408,20 @@
     </div>
   </div>
 
+  <!-- NEW: Credits Modal -->
+  <div class="backdrop" id="credits">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="creditsTitle">
+      <h2 id="creditsTitle">Credits 🌙</h2>
+      <ul>
+        <li><b>Garden Keeper & Producer:</b> Andi M.C.🧜‍♀️</li>
+        <li><b>Design & Code:</b> Andi + a committee of very opinionated frogs 🐸 (OpenAI)</li>
+        <li><b>Ambient Vibes:</b> Tokyo Lofi</li>
+        <li><b>Special Thanks:</b> Everyone who watered the mushrooms and didn’t sit on the fairies</li>
+      </ul>
+      <div class="actions"><button id="closeCredits">Back to Start</button></div>
+    </div>
+  </div>
+
 <script>
   // ====== State & Utilities ======
   const KEY = 'starlight_garden_state_v1';
@@ -427,6 +443,9 @@
     frogCnt: document.getElementById('frogCnt'),
     frogCost: document.getElementById('frogCost'),
     howto: document.getElementById('howto'),
+
+    // Credits modal
+    credits: document.getElementById('credits'),
 
     // Name input + display
     gardenNameInput: document.getElementById('gardenNameInput'),
@@ -921,18 +940,18 @@
   function openHowto(){ els.howto.style.display='flex'; }
   function closeHowto(){ els.howto.style.display='none'; }
 
-  // >>> FIXED: ensure the typed name is saved & shown immediately on Start <<<
+  // NEW: Credits modal handlers
+  function openCredits(){ els.credits.style.display='flex'; }
+  function closeCredits(){ els.credits.style.display='none'; }
+
+  // Ensure typed name shows immediately on Start
   function startGame(){
-    // Commit the latest typed value (iOS can delay composition)
     if (els.gardenNameInput) {
       els.gardenNameInput.blur();
       const typed = sanitizeName(els.gardenNameInput.value);
       if (typed) S.gardenName = typed;
       saveState();
-      // Reflect instantly in UI before grid build
       els.gardenTitle.textContent = S.gardenName || "";
-      // Optional: also reflect in the document title
-      // document.title = `${S.gardenName} 🌟`;
     }
 
     document.getElementById('start').style.display='none';
@@ -942,28 +961,22 @@
     startGameLoop();
   }
 
-  // ====== Smart resize handling (no flashing on iOS scroll) ======
+  // ====== Smart resize handling ======
   const handleResize = debounce(() => {
-    // Keep canvas matched (cheap)
-    FX.width = window.innerWidth; 
-    FX.height = window.innerHeight;
+    FX.width = window.innerWidth; FX.height = window.innerHeight;
 
     const vw = window.innerWidth;
     const breakpointChanged = computeCols() !== COLS;
 
-    // Check width of plots container; ignore height-only jiggle
     const plotsW = els.plots ? Math.round(els.plots.clientWidth) : 0;
     const plotsWidthChanged = Math.abs(plotsW - _lastPlotsW) >= 1;
 
     if (breakpointChanged) {
-      buildPlots(true);           // 4↔5 columns: rebuild
+      buildPlots(true);
     } else if (plotsWidthChanged) {
-      recenterSprites();          // width changed (e.g., rotation): recompute positions
+      recenterSprites();
       _lastPlotsW = plotsW;
-    } else {
-      // height-only jiggle from iOS address bar → ignore
     }
-
     _lastVw = vw;
   }, 120);
 
@@ -979,6 +992,11 @@
   document.getElementById('btnHowtoStart').addEventListener('click', openHowto);
   document.getElementById('howtoBtn').addEventListener('click', openHowto);
   document.getElementById('closeHowto').addEventListener('click', closeHowto);
+
+  // NEW: Credits button listeners
+  document.getElementById('btnCreditsStart').addEventListener('click', openCredits);
+  document.getElementById('closeCredits').addEventListener('click', closeCredits);
+
   document.getElementById('musicBtn').addEventListener('click', toggleMusic);
   document.getElementById('resetBtn').addEventListener('click', resetState);
 
@@ -1030,4 +1048,3 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
-
