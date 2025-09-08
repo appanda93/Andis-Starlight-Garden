@@ -16,8 +16,8 @@
 
 <!-- iOS Home Screen icon (use your encoded filename or rename to a clean one) -->
 <link rel="apple-touch-icon"
-      href="https://appanda93.github.io/Andis-Starlight-Garden/apple-touch-icon-180x180.png?v=3">
-
+      href="https://appanda93.github.io/Andis-Starlight-Garden/apple-touch-icon-180x180%20(1).png?v=3">
+<meta name="apple-mobile-web-app-title" content="Andi's Starlight Garden">
 
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
@@ -76,9 +76,42 @@
   #musicBtn:hover,#resetBtn:hover,#howtoBtn:hover{transform:scale(1.05); background:var(--btn2)}
   #bestBadge{font-size:14px; opacity:.85}
 
+  /* ===== Garden title + rename ===== */
+  .titleRow{
+    margin: 6px 0 0;
+    display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
+  }
+  .garden-title{
+    margin: 0;
+    text-align:center;
+    font-size: 40px;
+    line-height: 1.1;
+    letter-spacing: .5px;
+    text-shadow:0 0 8px #ff99cc66,0 0 12px #cc99ff66;
+  }
+  .renameBtn{
+    border:none; border-radius:10px; padding:8px 10px;
+    background:var(--btn); font-weight:600; cursor:pointer;
+    box-shadow:0 4px 8px rgba(0,0,0,.12);
+  }
+  .renameBtn:hover{ transform:scale(1.04); background:var(--btn2) }
+  .renameRow{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    margin:8px 0 0;
+  }
+  .renameRow input{
+    min-width: 260px; max-width: 90vw;
+    padding:10px 12px; border-radius:10px; border:2px solid var(--accent); background:#fff; font-size:16px;
+  }
+  .renameRow button{
+    border:none; border-radius:10px; padding:8px 12px; background:var(--btn); font-weight:600; cursor:pointer;
+    box-shadow:0 4px 8px rgba(0,0,0,.12);
+  }
+  .renameRow button:hover{ transform:scale(1.04); background:var(--btn2) }
+
   /* ===== Mythical Forest Board ===== */
   #garden{
-    margin:12px 0 0; position:relative;
+    margin:10px 0 0; position:relative;
     border:4px solid var(--accent); border-radius:18px;
     box-shadow:0 10px 30px var(--shadow);
     min-height:340px; overflow:hidden;
@@ -206,11 +239,25 @@
   #start .panel{
     text-align:center; background:#fffafa; border:4px solid var(--accent); border-radius:16px;
     padding:18px 24px; box-shadow:0 10px 30px var(--shadow);
+    max-width: 640px;
   }
   #start h1{font-size:56px; margin:0 0 6px; text-shadow:0 0 8px #ff99cc,0 0 12px #cc99ff}
   #start .best{margin:6px 0 12px; opacity:.85}
   #start button{font-weight:700; padding:10px 16px; border:none; border-radius:10px; background:var(--btn); cursor:pointer}
   #start button:hover{transform:scale(1.05); background:var(--btn2)}
+
+  /* Start screen: name field */
+  .nameRow{display:flex; gap:10px; margin-top:10px; align-items:center; justify-content:center; flex-wrap:wrap}
+  .nameRow label{font-weight:600}
+  .nameRow input{
+    min-width: 260px;
+    max-width: 90vw;
+    padding:10px 12px;
+    border-radius:10px;
+    border:2px solid var(--accent);
+    background:#fff;
+    font-size:16px;
+  }
 
   /* Confetti */
   #fxCanvas{position:fixed; inset:0; pointer-events:none; z-index:20;}
@@ -256,6 +303,13 @@
       <h1>Andi's Starlight Garden 🧚‍♀️</h1>
       <div class="best" id="bestOnStart">Best: 0</div>
       <p>Grow mushrooms, invite fairies, befriend frogs — and bask in the glow ✨</p>
+
+      <!-- Name your garden -->
+      <div class="nameRow">
+        <label for="gardenNameInput">Garden name:</label>
+        <input id="gardenNameInput" type="text" maxlength="60" placeholder="Name your garden…">
+      </div>
+
       <div style="margin-top:10px">
         <button id="btnStart">Start Garden</button>
         <button id="btnHowtoStart">How to Play</button>
@@ -277,6 +331,18 @@
         <button id="musicBtn">🔊 Music On</button>
         <button id="resetBtn" title="Reset progress">Reset</button>
       </div>
+    </div>
+
+    <!-- Garden display name + Rename -->
+    <div class="titleRow">
+      <h2 id="gardenTitle" class="garden-title"></h2>
+      <button id="renameBtn" class="renameBtn" title="Rename your garden">✏️ Rename</button>
+    </div>
+    <!-- Inline rename editor -->
+    <div id="renameEditor" class="renameRow" style="display:none;">
+      <input id="renameInput" type="text" maxlength="60" placeholder="Enter a new garden name…">
+      <button id="renameSave">Save</button>
+      <button id="renameCancel">Cancel</button>
     </div>
 
     <div id="garden">
@@ -360,6 +426,17 @@
     frogCnt: document.getElementById('frogCnt'),
     frogCost: document.getElementById('frogCost'),
     howto: document.getElementById('howto'),
+
+    // Name input + display
+    gardenNameInput: document.getElementById('gardenNameInput'),
+    gardenTitle: document.getElementById('gardenTitle'),
+
+    // Rename UI
+    renameBtn: document.getElementById('renameBtn'),
+    renameEditor: document.getElementById('renameEditor'),
+    renameInput: document.getElementById('renameInput'),
+    renameSave: document.getElementById('renameSave'),
+    renameCancel: document.getElementById('renameCancel'),
 
     // Mermaid UI
     mermaidCnt: document.getElementById('mermaidCnt'),
@@ -475,6 +552,7 @@
         const elapsed = Math.max(0, Math.floor((now - (obj.last||now))/1000));
         obj.amount += obj.perSec * elapsed;                              // offline
         obj.totalEarned = (obj.totalEarned || 0) + obj.perSec * elapsed; // lifetime
+        obj.gardenName = obj.gardenName || "Andi's Starlight Garden";    // default name
         obj.last = now;
         localStorage.setItem(KEY, JSON.stringify(obj));
         return obj;
@@ -484,6 +562,7 @@
       amount:0, best:0, perSec:0, perTap:1,
       mush:0, fairy:0, frog:0, mermaid:0,
       totalEarned: 0,
+      gardenName: "Andi's Starlight Garden",
       last:Date.now()
     };
   }
@@ -495,6 +574,7 @@
         amount:0, best:0, perSec:0, perTap:1,
         mush:0, fairy:0, frog:0, mermaid:0,
         totalEarned: 0,
+        gardenName: "Andi's Starlight Garden",
         last:Date.now()
       };
       celebratedThisSession = false;
@@ -521,6 +601,12 @@
     document.getElementById('rate').textContent = n(S.perSec);
     document.getElementById('tap').textContent = n(S.perTap);
     document.getElementById('bestOnStart').textContent = 'Best: ' + n(S.best);
+
+    // update name input + title
+    if (els.gardenNameInput && document.getElementById('start').style.display !== 'none') {
+      els.gardenNameInput.value = S.gardenName || "";
+    }
+    els.gardenTitle.textContent = S.gardenName || "";
 
     document.getElementById('mushCnt').textContent = S.mush;
     document.getElementById('fairyCnt').textContent = S.fairy;
@@ -751,6 +837,33 @@
   });
 
   // ====== Actions ======
+  function sanitizeName(s){
+    if (!s) return "Andi's Starlight Garden";
+    s = s.trim().replace(/\s+/g, ' ');
+    return s.slice(0, 60);
+  }
+
+  function openRename(){
+    els.renameInput.value = S.gardenName || "";
+    els.renameEditor.style.display = 'flex';
+    // focus after frame to ensure visibility on iOS
+    setTimeout(() => {
+      els.renameInput.focus();
+      els.renameInput.select();
+      els.renameEditor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0);
+  }
+  function closeRename(){
+    els.renameEditor.style.display = 'none';
+  }
+  function saveRename(){
+    const newName = sanitizeName(els.renameInput.value);
+    S.gardenName = newName;
+    saveState();
+    updateUI();
+    closeRename();
+  }
+
   function collect(e){
     S.amount += S.perTap;
     S.totalEarned = (S.totalEarned || 0) + S.perTap; // lifetime taps
@@ -806,7 +919,21 @@
   // ====== Start/Modal ======
   function openHowto(){ els.howto.style.display='flex'; }
   function closeHowto(){ els.howto.style.display='none'; }
+
+  // >>> FIXED: ensure the typed name is saved & shown immediately on Start <<<
   function startGame(){
+    // Commit the latest typed value (iOS can delay composition)
+    if (els.gardenNameInput) {
+      els.gardenNameInput.blur();
+      const typed = sanitizeName(els.gardenNameInput.value);
+      if (typed) S.gardenName = typed;
+      saveState();
+      // Reflect instantly in UI before grid build
+      els.gardenTitle.textContent = S.gardenName || "";
+      // Optional: also reflect in the document title
+      // document.title = `${S.gardenName} 🌟`;
+    }
+
     document.getElementById('start').style.display='none';
     document.getElementById('app').style.display='block';
     celebratedThisSession = false;
@@ -854,6 +981,23 @@
   document.getElementById('musicBtn').addEventListener('click', toggleMusic);
   document.getElementById('resetBtn').addEventListener('click', resetState);
 
+  // Pressing Enter in the start-name field starts the game immediately
+  els.gardenNameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      startGame();
+    }
+  });
+
+  // Rename handlers
+  els.renameBtn.addEventListener('click', openRename);
+  els.renameSave.addEventListener('click', saveRename);
+  els.renameCancel.addEventListener('click', closeRename);
+  els.renameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); saveRename(); }
+    if (e.key === 'Escape') { e.preventDefault(); closeRename(); }
+  });
+
   // Guard against scroll-jumps while pressing Collect on iOS
   const cb = document.getElementById('collectBtn');
   cb.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
@@ -871,6 +1015,7 @@
   document.getElementById('garden').addEventListener('click', (e)=>collect(e));
 
   // ====== Init ======
+  els.gardenNameInput.value = S.gardenName || "";
   updateUI();
   buildPlots(true);
 </script>
@@ -884,4 +1029,3 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
-
